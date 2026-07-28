@@ -5,8 +5,8 @@ import { AssignmentLibraryEntry, ScheduleSlot, UserProfile } from '../domain/typ
 
 function isFeasible(entry: AssignmentLibraryEntry, profile: UserProfile): boolean {
   if (entry.tags.equipmentNeeded === 'gym' && profile.gymAccess === 'none') return false;
-  if (entry.tags.equipmentNeeded === 'outdoor' && !profile.outdoorAccess) return false;
-  if (entry.tags.equipmentNeeded === 'kitchen' && !profile.kitchenAccess) return false;
+  // Outdoor/kitchen access are no longer collected during onboarding (most
+  // people have both) - assumed available for everyone.
   if (profile.physicalLimitations && entry.tags.intensity === 'high') return false;
   return true;
 }

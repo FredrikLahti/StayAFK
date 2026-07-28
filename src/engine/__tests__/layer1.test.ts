@@ -11,8 +11,6 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     caregivingFlag: 'none',
     physicalLimitations: false,
     gymAccess: 'yes_will_use',
-    outdoorAccess: true,
-    kitchenAccess: true,
     highRiskWindows: ['late_night'],
     livingSituation: 'alone',
     createdAt: '2026-01-01T00:00:00.000Z',

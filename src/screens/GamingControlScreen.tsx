@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CravingEvent, GamingControlStatus, GamingControlState, RelapseEvent, RelapseSeverity } from '../domain/types';
+import { CravingEvent, GamingControlStatus, RelapseEvent, RelapseSeverity } from '../domain/types';
 import { GAMING_CONTROL_STATE_LABEL } from '../gamingcontrol/labels';
 import { getRelapseOutcome, WHAT_HAPPENED_OPTIONS } from '../gamingcontrol/relapse';
 import { summarizeCravingEvents } from '../gamingcontrol/cravingStats';
+import GaugeDial from '../gamingcontrol/GaugeDial';
 import { formatEventTimestamp } from '../domain/date';
 import { colors, fontFamily, radius, spacing, typography } from '../theme';
 
@@ -24,16 +25,6 @@ const RELAPSE_OPTION_LABEL = Object.fromEntries(
   WHAT_HAPPENED_OPTIONS.map((o) => [o.severity, o.label])
 ) as Record<RelapseSeverity, string>;
 
-// Every state a relapse can resolve into is by definition "serious" - this
-// is the only place the reserved relapse color is allowed to show up
-// outside the relapse trigger/flow itself.
-const RELAPSE_CAUSED_STATES: GamingControlState[] = [
-  'under_pressure',
-  'lapse_interrupted',
-  'pattern_returning',
-  'recovery_active',
-];
-
 export default function GamingControlScreen({
   status,
   cravingEvents,
@@ -44,7 +35,6 @@ export default function GamingControlScreen({
 }: Props) {
   const [modal, setModal] = useState<ModalState>(autoOpenWhatHappened ? { kind: 'whatHappened' } : { kind: 'none' });
   const cravingSummary = summarizeCravingEvents(cravingEvents);
-  const stateIsSerious = RELAPSE_CAUSED_STATES.includes(status.state);
 
   function handleOptionTap(severity: RelapseSeverity) {
     const outcome = getRelapseOutcome(severity);
@@ -60,9 +50,9 @@ export default function GamingControlScreen({
         </Pressable>
 
         <Text style={styles.title}>Gaming Control</Text>
-        <Text style={[styles.stateValue, stateIsSerious && styles.stateValueSerious]}>
-          {GAMING_CONTROL_STATE_LABEL[status.state]}
-        </Text>
+        <View style={styles.gaugeWrapper}>
+          <GaugeDial state={status.state} />
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Cravings</Text>
@@ -152,8 +142,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.xxl, paddingTop: spacing.xxl * 2, paddingBottom: spacing.xxl * 4 },
   backLink: { color: colors.metalFlat, fontFamily: fontFamily.headerMedium, fontSize: 14, marginBottom: spacing.xl },
   title: { ...typography.screenTitle },
-  stateValue: { fontFamily: fontFamily.headerBold, color: colors.metalFlat, fontSize: 18, marginTop: spacing.xs, marginBottom: spacing.xxl + spacing.xs },
-  stateValueSerious: { color: colors.relapse },
+  gaugeWrapper: { alignItems: 'center', marginTop: spacing.md, marginBottom: spacing.xxl },
   section: { marginBottom: spacing.xxl + spacing.xs },
   sectionLabel: { ...typography.sectionTitle, marginBottom: spacing.sm - 2 },
   statsRow: { flexDirection: 'row', gap: spacing.xxl, marginBottom: spacing.md },

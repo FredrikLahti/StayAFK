@@ -1,6 +1,8 @@
-// Exact question set from ARCHITECTURE.md's "Onboarding question set" section.
-// Every question is single-select or multi-select, no text input; each maps
-// to one UserProfile field.
+// Question set derived from ARCHITECTURE.md's "Onboarding question set"
+// section, since refined for clarity: Q1 reworded, weekday/weekend free-time
+// reframed as an explicit pair, and outdoor/kitchen access dropped (low
+// signal - most people have both, so layer4.ts now treats access as
+// unconditionally available).
 import {
   CaregivingLevel,
   DayPart,
@@ -19,16 +21,39 @@ export interface QuestionOption<V extends string> {
 }
 
 export interface QuestionConfig<V extends string = string> {
+  kind: 'single' | 'multi';
   field: string;
   prompt: string;
   type: QuestionType;
   options: QuestionOption<V>[];
 }
 
-export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
+// Weekday/weekend free time are the same underlying question asked twice -
+// presented as one paired step (a "Weekdays" / "Weekends" pair sharing the
+// same option set) rather than two sequential, separate-feeling questions.
+export interface PairedQuestionConfig<V extends string = string> {
+  kind: 'paired';
+  prompt: string;
+  pairs: [
+    { field: string; label: string; options: QuestionOption<V>[] },
+    { field: string; label: string; options: QuestionOption<V>[] },
+  ];
+}
+
+export type OnboardingStep = QuestionConfig | PairedQuestionConfig;
+
+const FREE_TIME_OPTIONS: QuestionOption<FreeTimeBand>[] = [
+  { label: 'Less than 2h', value: 'lt2' },
+  { label: '2-4h', value: '2to4' },
+  { label: '4-6h', value: '4to6' },
+  { label: '6h+', value: '6plus' },
+];
+
+export const ONBOARDING_QUESTIONS: OnboardingStep[] = [
   {
+    kind: 'single',
     field: 'workScheduleType',
-    prompt: 'Work/study situation',
+    prompt: 'How is your regular week usually occupied?',
     type: 'single',
     options: [
       { label: 'Standard schedule (similar hours most days)', value: 'fixed' as WorkScheduleType },
@@ -38,28 +63,15 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
-    field: 'baselineFreeTimeWeekday',
-    prompt: 'Typical free time — weekday',
-    type: 'single',
-    options: [
-      { label: 'Less than 2h', value: 'lt2' as FreeTimeBand },
-      { label: '2-4h', value: '2to4' as FreeTimeBand },
-      { label: '4-6h', value: '4to6' as FreeTimeBand },
-      { label: '6h+', value: '6plus' as FreeTimeBand },
+    kind: 'paired',
+    prompt: 'Typical free time',
+    pairs: [
+      { field: 'baselineFreeTimeWeekday', label: 'Weekdays', options: FREE_TIME_OPTIONS },
+      { field: 'baselineFreeTimeWeekend', label: 'Weekends', options: FREE_TIME_OPTIONS },
     ],
   },
   {
-    field: 'baselineFreeTimeWeekend',
-    prompt: 'Typical free time — weekend',
-    type: 'single',
-    options: [
-      { label: 'Less than 2h', value: 'lt2' as FreeTimeBand },
-      { label: '2-4h', value: '2to4' as FreeTimeBand },
-      { label: '4-6h', value: '4to6' as FreeTimeBand },
-      { label: '6h+', value: '6plus' as FreeTimeBand },
-    ],
-  },
-  {
+    kind: 'multi',
     field: 'typicalFreeWindows',
     prompt: 'When free time usually falls',
     type: 'multi',
@@ -71,6 +83,7 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
+    kind: 'single',
     field: 'caregivingFlag',
     prompt: 'Caregiving responsibilities',
     type: 'single',
@@ -81,6 +94,7 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
+    kind: 'single',
     field: 'physicalLimitations',
     prompt: 'Any physical limitations or injuries to work around?',
     type: 'single',
@@ -90,6 +104,7 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
+    kind: 'single',
     field: 'gymAccess',
     prompt: 'Gym access',
     type: 'single',
@@ -100,24 +115,7 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
-    field: 'outdoorAccess',
-    prompt: 'Outdoor space accessible for activity?',
-    type: 'single',
-    options: [
-      { label: 'Yes', value: 'true' },
-      { label: 'No', value: 'false' },
-    ],
-  },
-  {
-    field: 'kitchenAccess',
-    prompt: 'Kitchen/cooking access?',
-    type: 'single',
-    options: [
-      { label: 'Yes', value: 'true' },
-      { label: 'No', value: 'false' },
-    ],
-  },
-  {
+    kind: 'single',
     field: 'livingSituation',
     prompt: 'Living situation',
     type: 'single',
@@ -129,6 +127,7 @@ export const ONBOARDING_QUESTIONS: QuestionConfig[] = [
     ],
   },
   {
+    kind: 'multi',
     field: 'highRiskWindows',
     prompt: 'When does gaming usually take over?',
     type: 'multi',
@@ -160,9 +159,7 @@ export function buildProfileFromAnswers(
     caregivingFlag: get('caregivingFlag') as CaregivingLevel,
     physicalLimitations: get('physicalLimitations') === 'true',
     gymAccess: get('gymAccess') as GymAccess,
-    outdoorAccess: get('outdoorAccess') === 'true',
-    kitchenAccess: get('kitchenAccess') === 'true',
-    livingSituation: get('livingSituation') as LivingSituation,
     highRiskWindows: getList('highRiskWindows') as GamingTrigger[],
+    livingSituation: get('livingSituation') as LivingSituation,
   };
 }

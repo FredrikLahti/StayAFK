@@ -12,6 +12,7 @@ import OnboardingScreen from './src/onboarding/OnboardingScreen';
 import {
   AssignmentLibraryEntry,
   CravingEvent,
+  FoundationStatus,
   GamingControlStatus,
   NotificationIntensity,
   NotificationSettings,
@@ -51,6 +52,7 @@ import { todayISODate } from './src/domain/date';
 import { generateAndPersistDay } from './src/dayGenerator';
 import { applyRelapseToFoundationStatuses, getRelapseOutcome } from './src/gamingcontrol/relapse';
 import { daysBetween, getLastActivityDate, getSilenceLevel, SilenceLevel } from './src/gamingcontrol/silence';
+import { summarizeCravingEvents } from './src/gamingcontrol/cravingStats';
 import { colors, FONTS_TO_LOAD } from './src/theme';
 import { isTrialExpired } from './src/purchase/trial';
 import {
@@ -74,6 +76,8 @@ interface TodayData extends CoreData {
   date: string;
   slots: ScheduleSlot[];
   library: AssignmentLibraryEntry[];
+  foundationStatuses: FoundationStatus[];
+  cravingEvents: CravingEvent[];
   silenceLevel: SilenceLevel;
 }
 
@@ -86,7 +90,6 @@ type AppState =
   | ({ screen: 'today' } & TodayData)
   | ({
       screen: 'gamingControl';
-      cravingEvents: CravingEvent[];
       relapseEvents: RelapseEvent[];
       autoOpenWhatHappened?: boolean;
     } & TodayData)
@@ -172,7 +175,11 @@ export default function App() {
       slots = await generateAndPersistDay(date, profile, phase.currentPhase);
     }
 
-    const library = await getAssignmentLibrary();
+    const [library, foundationStatuses, cravingEvents] = await Promise.all([
+      getAssignmentLibrary(),
+      getFoundationStatuses(),
+      getCravingEvents(),
+    ]);
     const silenceLevel = await computeSilenceLevel(phase, notificationSettings);
     await syncDailyNotifications({
       intensity: notificationSettings.intensity,
@@ -185,6 +192,8 @@ export default function App() {
       phase,
       slots,
       library,
+      foundationStatuses,
+      cravingEvents,
       gamingControl,
       notificationSettings,
       purchaseStatus,
@@ -228,11 +237,9 @@ export default function App() {
   async function handleLogCraving() {
     const event = await logCravingEvent();
     setState((prev) =>
-      prev.screen === 'gamingControl'
+      prev.screen === 'gamingControl' || prev.screen === 'today'
         ? { ...prev, cravingEvents: [event, ...prev.cravingEvents], silenceLevel: 'none' }
-        : prev.screen === 'today'
-          ? { ...prev, silenceLevel: 'none' }
-          : prev
+        : prev
     );
   }
 
@@ -246,7 +253,7 @@ export default function App() {
   function handleBackToToday() {
     setState((prev) => {
       if (prev.screen !== 'gamingControl') return prev;
-      const { cravingEvents, relapseEvents, autoOpenWhatHappened, ...todayData } = prev;
+      const { relapseEvents, autoOpenWhatHappened, ...todayData } = prev;
       return { ...todayData, screen: 'today' };
     });
   }
@@ -280,6 +287,7 @@ export default function App() {
         ...prev,
         gamingControl: { ...prev.gamingControl, state: outcome.resultingState },
         relapseEvents: [event, ...prev.relapseEvents],
+        foundationStatuses: updatedStatuses,
         silenceLevel: 'none',
       };
     });
@@ -408,7 +416,10 @@ export default function App() {
           onRelapse={handleRelapse}
           autoOpenWhatHappened={state.autoOpenWhatHappened}
         />
-        <CravingButton onPress={handleLogCraving} />
+        <CravingButton
+          onPress={handleLogCraving}
+          weeklyCountAfterLogging={summarizeCravingEvents(state.cravingEvents).recentCount}
+        />
         <StatusBar style="light" />
       </View>
     );
@@ -421,6 +432,7 @@ export default function App() {
         phase={state.phase.currentPhase}
         slots={state.slots}
         library={state.library}
+        foundationStatuses={state.foundationStatuses}
         silenceLevel={state.silenceLevel}
         onRestartOnboarding={handleRestartOnboarding}
         onCheckIn={handleCheckIn}
@@ -429,7 +441,10 @@ export default function App() {
         onSomethingsUp={handleSomethingsUp}
         onOptOutOfNotifications={handleOptOutOfNotifications}
       />
-      <CravingButton onPress={handleLogCraving} />
+      <CravingButton
+        onPress={handleLogCraving}
+        weeklyCountAfterLogging={summarizeCravingEvents(state.cravingEvents).recentCount}
+      />
       <StatusBar style="light" />
     </View>
   );

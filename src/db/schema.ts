@@ -14,8 +14,6 @@ CREATE TABLE IF NOT EXISTS user_profile (
   caregiving_flag TEXT NOT NULL,
   physical_limitations INTEGER NOT NULL,
   gym_access TEXT NOT NULL,
-  outdoor_access INTEGER NOT NULL,
-  kitchen_access INTEGER NOT NULL,
   high_risk_windows TEXT NOT NULL,
   living_situation TEXT NOT NULL,
   created_at TEXT NOT NULL

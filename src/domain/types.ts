@@ -30,8 +30,6 @@ export interface UserProfile {
   caregivingFlag: CaregivingLevel;
   physicalLimitations: boolean;
   gymAccess: GymAccess;
-  outdoorAccess: boolean;
-  kitchenAccess: boolean;
   highRiskWindows: GamingTrigger[];
   livingSituation: LivingSituation;
   createdAt: string;

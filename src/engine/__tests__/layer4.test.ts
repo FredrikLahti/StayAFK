@@ -12,8 +12,6 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     caregivingFlag: 'none',
     physicalLimitations: false,
     gymAccess: 'yes_will_use',
-    outdoorAccess: true,
-    kitchenAccess: true,
     highRiskWindows: [],
     livingSituation: 'alone',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -50,14 +48,6 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
     const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, profile);
 
     expect(result.assignedActivityId).not.toBe('move-1'); // move-1 requires gym
-  });
-
-  it('excludes outdoor-tagged activities when there is no outdoor access', () => {
-    const slots = [makeSlot({ domain: 'Move', durationMinutes: 30 })];
-    const profile = makeProfile({ outdoorAccess: false, gymAccess: 'none' });
-    const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, profile);
-
-    expect(result.assignedActivityId).not.toBe('move-3');
   });
 
   it('excludes high-intensity activities when the profile has physical limitations', () => {
