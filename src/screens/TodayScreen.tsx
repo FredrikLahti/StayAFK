@@ -10,6 +10,7 @@ interface Props {
   library: AssignmentLibraryEntry[];
   onRestartOnboarding: () => void;
   onCheckIn: (slotId: string, update: { status: SlotStatus; equivalentActivityId: string | null }) => void;
+  onOpenGamingControl: () => void;
 }
 
 const WINDOW_ORDER: DayPart[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -28,14 +29,29 @@ function groupByWindow(slots: ScheduleSlot[]): Record<DayPart, ScheduleSlot[]> {
   return groups;
 }
 
-export default function TodayScreen({ date, phase, slots, library, onRestartOnboarding, onCheckIn }: Props) {
+export default function TodayScreen({
+  date,
+  phase,
+  slots,
+  library,
+  onRestartOnboarding,
+  onCheckIn,
+  onOpenGamingControl,
+}: Props) {
   const groups = groupByWindow(slots);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.date}>{date}</Text>
-        <Text style={styles.phase}>Phase: {phase}</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.date}>{date}</Text>
+            <Text style={styles.phase}>Phase: {phase}</Text>
+          </View>
+          <Pressable onPress={onOpenGamingControl}>
+            <Text style={styles.gamingControlLink}>Gaming Control</Text>
+          </Pressable>
+        </View>
 
         {WINDOW_ORDER.map((window) => {
           const windowSlots = groups[window];
@@ -66,8 +82,10 @@ export default function TodayScreen({ date, phase, slots, library, onRestartOnbo
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f1115' },
   content: { padding: 24, paddingTop: 48, paddingBottom: 48 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
   date: { color: '#8a8f98', fontSize: 14 },
-  phase: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginTop: 4, marginBottom: 24 },
+  phase: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginTop: 4 },
+  gamingControlLink: { color: '#5b8cff', fontSize: 13, fontWeight: '600', marginTop: 4 },
   windowBlock: { marginBottom: 20 },
   windowLabel: { color: '#5b8cff', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 },
   restartLink: { marginTop: 24, alignItems: 'center' },

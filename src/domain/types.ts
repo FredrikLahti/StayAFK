@@ -1,6 +1,4 @@
 // Core data model, mirroring ARCHITECTURE.md's "Core data model" section.
-// Stage 1 only implements the fields needed to drive onboarding + the
-// scheduling engine; GamingControlStatus/CravingEvent/RelapseEvent/
 // NotificationSettings/PurchaseStatus are later-stage concerns and are
 // intentionally omitted here.
 
@@ -115,4 +113,47 @@ export interface AssignmentLibraryEntry {
   tags: AssignmentTags;
   intensityTier: IntensityTier;
   description: string;
+}
+
+// Full state list per ARCHITECTURE.md. Stage 3 (explicit-trigger scope) only
+// ever produces 'in_control' (the starting state) and, via relapse,
+// 'lapse_interrupted' / 'recovery_active'. 'under_pressure',
+// 'pattern_returning', and 'self_sustaining' all depend on behavioral signal
+// derivation (Live-substitution frequency, craving clustering, check-in
+// gaps), which is explicitly out of scope for this pass.
+export type GamingControlState =
+  | 'reset_active'
+  | 'in_control'
+  | 'under_pressure'
+  | 'lapse_interrupted'
+  | 'pattern_returning'
+  | 'recovery_active'
+  | 'self_sustaining';
+
+export interface GamingControlStatus {
+  state: GamingControlState;
+  // Placeholder for now per Stage 3 scope - real signal derivation
+  // (Live-substitution frequency, craving clustering, check-in gaps) is a
+  // later stage.
+  signalLog: string[];
+}
+
+export type CravingTriggerTag = 'bored' | 'stressed' | 'saw_game_content' | 'free_time_opened_up';
+
+export interface CravingEvent {
+  id: string;
+  timestamp: string; // ISO datetime
+  // Not collected by Stage 3's single-tap button (no follow-up question
+  // yet), but present in the data model for when that's added.
+  triggerTag?: CravingTriggerTag;
+}
+
+export type RelapseSeverity = 'short_lapse' | 'several_days' | 'full_return';
+
+export interface RelapseEvent {
+  id: string;
+  date: string; // ISO yyyy-mm-dd
+  severity: RelapseSeverity;
+  // The GamingControlState the relapse resolved into.
+  resultingAction: GamingControlState;
 }

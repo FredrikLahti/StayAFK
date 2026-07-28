@@ -29,3 +29,6 @@ export * from './domainFloorRepo';
 export * from './foundationStatusRepo';
 export * from './scheduleSlotRepo';
 export * from './assignmentLibraryRepo';
+export * from './gamingControlRepo';
+export * from './cravingEventRepo';
+export * from './relapseEventRepo';

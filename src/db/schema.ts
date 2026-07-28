@@ -70,4 +70,27 @@ CREATE TABLE IF NOT EXISTS assignment_library (
   intensity_tier TEXT NOT NULL,
   description TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS gaming_control_status (
+  id TEXT PRIMARY KEY NOT NULL,
+  state TEXT NOT NULL,
+  signal_log TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS craving_event (
+  id TEXT PRIMARY KEY NOT NULL,
+  timestamp TEXT NOT NULL,
+  trigger_tag TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_craving_event_timestamp ON craving_event(timestamp);
+
+CREATE TABLE IF NOT EXISTS relapse_event (
+  id TEXT PRIMARY KEY NOT NULL,
+  date TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  resulting_action TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_relapse_event_date ON relapse_event(date);
 `;
