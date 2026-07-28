@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as ExpoIap from 'expo-iap';
 import type { Purchase } from 'expo-iap';
 
@@ -12,10 +13,23 @@ export const UNLOCK_PRODUCT_ID = 'com.stayafk.fullaccess';
 // used to actually charge anyone.
 export const PLACEHOLDER_PRICE_DISPLAY = '$19.99';
 
+// expo-iap has no native module inside Expo Go - Expo Go only ships the
+// native modules bundled with the Expo SDK itself, and expo-iap is a
+// third-party community module, so every real call below throws "Cannot
+// find native module 'ExpoIap'" there even though Platform.OS reports
+// ios/android. executionEnvironment is the current-recommended check
+// (Constants.appOwnership is deprecated in favor of it).
+const RUNNING_IN_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 // expo-iap only lists ios/android/tvos in its module config - there is no
-// web implementation, so every call here is guarded and safe to invoke
-// from a screen that also has to render in this project's web preview.
-const IAP_SUPPORTED = Platform.OS === 'ios' || Platform.OS === 'android';
+// web implementation - and it also isn't usable inside Expo Go (see
+// above), so every call here is guarded and safe to invoke from a screen
+// that also has to render in this project's web preview and in Expo Go.
+const IAP_SUPPORTED = (Platform.OS === 'ios' || Platform.OS === 'android') && !RUNNING_IN_EXPO_GO;
+
+const UNSUPPORTED_MESSAGE = RUNNING_IN_EXPO_GO
+  ? "Purchases aren't testable in Expo Go - this will work in a real build."
+  : 'In-app purchases require a native iOS/Android build - not available in this preview.';
 
 export function isIapSupportedOnThisPlatform(): boolean {
   return IAP_SUPPORTED;
@@ -79,7 +93,7 @@ export function subscribeToPurchaseUpdates(
 
 export async function requestUnlockPurchase(): Promise<void> {
   if (!IAP_SUPPORTED) {
-    throw new Error('In-app purchases require a native iOS/Android build - not available in this preview.');
+    throw new Error(UNSUPPORTED_MESSAGE);
   }
   await ExpoIap.requestPurchase({
     request: { apple: { sku: UNLOCK_PRODUCT_ID }, google: { skus: [UNLOCK_PRODUCT_ID] } },
