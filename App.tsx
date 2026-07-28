@@ -4,8 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import EntryScreen from './src/screens/EntryScreen';
 import TodayScreen from './src/screens/TodayScreen';
 import OnboardingScreen from './src/onboarding/OnboardingScreen';
-import { AssignmentLibraryEntry, PhaseName, ScheduleSlot, UserProfile } from './src/domain/types';
+import { AssignmentLibraryEntry, PhaseName, ScheduleSlot, SlotStatus, UserProfile } from './src/domain/types';
 import {
+  checkInScheduleSlot,
   getAssignmentLibrary,
   getPhase,
   getScheduleSlotsForDate,
@@ -66,6 +67,18 @@ export default function App() {
     setState({ screen: 'onboarding' });
   }
 
+  async function handleCheckIn(
+    slotId: string,
+    update: { status: SlotStatus; equivalentActivityId: string | null }
+  ) {
+    await checkInScheduleSlot(slotId, update);
+    setState((prev) =>
+      prev.screen === 'today'
+        ? { ...prev, slots: prev.slots.map((s) => (s.id === slotId ? { ...s, ...update } : s)) }
+        : prev
+    );
+  }
+
   if (state.screen === 'loading') {
     return (
       <View style={styles.loadingContainer}>
@@ -101,6 +114,7 @@ export default function App() {
         slots={state.slots}
         library={state.library}
         onRestartOnboarding={handleRestartOnboarding}
+        onCheckIn={handleCheckIn}
       />
       <StatusBar style="light" />
     </>

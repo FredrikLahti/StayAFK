@@ -29,6 +29,7 @@ function makeSlot(overrides: Partial<ScheduleSlot> = {}): ScheduleSlot {
     domain: 'Move',
     durationMinutes: 45,
     assignedActivityId: null,
+    equivalentActivityId: null,
     status: 'pending',
     phaseAtCreation: 'reset',
     ...overrides,
@@ -88,6 +89,7 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
         id: 'move-gym-only',
         domain: 'Move' as const,
         tags: { equipmentNeeded: 'gym' as const, location: 'gym' as const, intensity: 'high' as const, durationMinutes: 45 },
+        intensityTier: 'high' as const,
         description: '[PLACEHOLDER] gym only',
       },
     ];

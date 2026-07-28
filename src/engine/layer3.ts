@@ -25,6 +25,7 @@ function makeSlot(
     domain,
     durationMinutes,
     assignedActivityId: null,
+    equivalentActivityId: null,
     status: 'pending',
     phaseAtCreation: phase,
   };

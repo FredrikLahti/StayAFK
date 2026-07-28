@@ -8,6 +8,7 @@ interface ScheduleSlotRow {
   domain: string;
   duration_minutes: number;
   assigned_activity_id: string | null;
+  equivalent_activity_id: string | null;
   status: string;
   phase_at_creation: string;
 }
@@ -20,6 +21,7 @@ function rowToSlot(row: ScheduleSlotRow): ScheduleSlot {
     domain: row.domain as Domain,
     durationMinutes: row.duration_minutes,
     assignedActivityId: row.assigned_activity_id,
+    equivalentActivityId: row.equivalent_activity_id,
     status: row.status as SlotStatus,
     phaseAtCreation: row.phase_at_creation as PhaseName,
   };
@@ -40,8 +42,8 @@ export async function replaceScheduleSlotsForDate(date: string, slots: ScheduleS
     await db.runAsync('DELETE FROM schedule_slot WHERE date = ?', [date]);
     for (const slot of slots) {
       await db.runAsync(
-        `INSERT INTO schedule_slot (id, date, time_window, domain, duration_minutes, assigned_activity_id, status, phase_at_creation)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO schedule_slot (id, date, time_window, domain, duration_minutes, assigned_activity_id, equivalent_activity_id, status, phase_at_creation)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           slot.id,
           slot.date,
@@ -49,10 +51,25 @@ export async function replaceScheduleSlotsForDate(date: string, slots: ScheduleS
           slot.domain,
           slot.durationMinutes,
           slot.assignedActivityId,
+          slot.equivalentActivityId,
           slot.status,
           slot.phaseAtCreation,
         ]
       );
     }
   });
+}
+
+export interface ScheduleSlotCheckIn {
+  status: SlotStatus;
+  equivalentActivityId: string | null;
+}
+
+export async function checkInScheduleSlot(id: string, checkIn: ScheduleSlotCheckIn): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE schedule_slot SET status = ?, equivalent_activity_id = ? WHERE id = ?', [
+    checkIn.status,
+    checkIn.equivalentActivityId,
+    id,
+  ]);
 }

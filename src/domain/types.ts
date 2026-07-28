@@ -84,6 +84,10 @@ export interface ScheduleSlot {
   domain: Domain;
   durationMinutes: number;
   assignedActivityId: string | null;
+  // The AssignmentLibrary entry actually logged when status is 'equivalent'
+  // (what the person substituted in, as opposed to assignedActivityId,
+  // what the engine originally assigned). Null otherwise.
+  equivalentActivityId: string | null;
   status: SlotStatus;
   phaseAtCreation: PhaseName;
 }
@@ -99,9 +103,16 @@ export interface AssignmentTags {
   durationMinutes: number;
 }
 
+// Ordinal tier used by the check-in honesty check to compare a claimed
+// "Equivalent" substitution against what was originally assigned - distinct
+// from AssignmentTags.intensity, which drives Layer 4's feasibility
+// matching (e.g. excluding high-intensity picks for physical limitations).
+export type IntensityTier = 'low' | 'moderate' | 'high';
+
 export interface AssignmentLibraryEntry {
   id: string;
   domain: Domain;
   tags: AssignmentTags;
+  intensityTier: IntensityTier;
   description: string;
 }

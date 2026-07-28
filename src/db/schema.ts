@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS schedule_slot (
   domain TEXT NOT NULL,
   duration_minutes INTEGER NOT NULL,
   assigned_activity_id TEXT,
+  equivalent_activity_id TEXT,
   status TEXT NOT NULL,
   phase_at_creation TEXT NOT NULL
 );
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS assignment_library (
   id TEXT PRIMARY KEY NOT NULL,
   domain TEXT NOT NULL,
   tags TEXT NOT NULL,
+  intensity_tier TEXT NOT NULL,
   description TEXT NOT NULL
 );
 `;
