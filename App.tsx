@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import EntryScreen from './src/screens/EntryScreen';
 import TodayScreen from './src/screens/TodayScreen';
 import GamingControlScreen from './src/screens/GamingControlScreen';
@@ -38,6 +39,7 @@ import {
 import { todayISODate } from './src/domain/date';
 import { generateAndPersistDay } from './src/dayGenerator';
 import { applyRelapseToFoundationStatuses, getRelapseOutcome } from './src/gamingcontrol/relapse';
+import { colors, FONTS_TO_LOAD } from './src/theme';
 
 interface TodayData {
   date: string;
@@ -56,6 +58,7 @@ type AppState =
 
 export default function App() {
   const [state, setState] = useState<AppState>({ screen: 'loading' });
+  const [fontsLoaded] = useFonts(FONTS_TO_LOAD);
 
   useEffect(() => {
     bootstrap();
@@ -152,10 +155,10 @@ export default function App() {
     });
   }
 
-  if (state.screen === 'loading') {
+  if (state.screen === 'loading' || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color="#5b8cff" />
+        <ActivityIndicator color={colors.metalFlat} />
         <StatusBar style="light" />
       </View>
     );
@@ -213,6 +216,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f1115' },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   flexFill: { flex: 1 },
 });

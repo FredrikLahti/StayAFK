@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ONBOARDING_QUESTIONS, buildProfileFromAnswers } from './questions';
 import { UserProfile } from '../domain/types';
+import { colors, fontFamily, radius, spacing, typography, MetalGradient } from '../theme';
 
 interface Props {
   onComplete: (profile: Omit<UserProfile, 'id' | 'createdAt'>) => void;
@@ -46,6 +47,8 @@ export default function OnboardingScreen({ onComplete }: Props) {
     commitAnswer(question.field, pendingMulti);
   }
 
+  const canContinue = pendingMulti.length > 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -87,15 +90,19 @@ export default function OnboardingScreen({ onComplete }: Props) {
               );
             })}
             <Pressable
-              style={({ pressed }) => [
-                styles.continueButton,
-                pendingMulti.length === 0 && styles.continueButtonDisabled,
-                pressed && pendingMulti.length > 0 && styles.optionPressed,
-              ]}
+              style={({ pressed }) => [pressed && canContinue && styles.optionPressed]}
               onPress={handleMultiContinue}
-              disabled={pendingMulti.length === 0}
+              disabled={!canContinue}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              {canContinue ? (
+                <MetalGradient style={styles.continueButton}>
+                  <Text style={styles.continueButtonText}>Continue</Text>
+                </MetalGradient>
+              ) : (
+                <View style={[styles.continueButton, styles.continueButtonDisabled]}>
+                  <Text style={styles.continueButtonTextDisabled}>Continue</Text>
+                </View>
+              )}
             </Pressable>
           </>
         )}
@@ -105,30 +112,30 @@ export default function OnboardingScreen({ onComplete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f1115' },
-  content: { padding: 24, paddingTop: 48 },
-  progress: { color: '#8a8f98', fontSize: 14, marginBottom: 8 },
-  prompt: { color: '#ffffff', fontSize: 22, fontWeight: '600', marginBottom: 24 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.xxl, paddingTop: spacing.xxl * 2 },
+  progress: { ...typography.monoMuted, marginBottom: spacing.sm },
+  prompt: { ...typography.questionPrompt, marginBottom: spacing.xxl },
   option: {
-    backgroundColor: '#1b1e25',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingVertical: 16,
     paddingHorizontal: 18,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#2a2e37',
+    borderColor: colors.border,
   },
-  optionSelected: { borderColor: '#5b8cff', backgroundColor: '#1a2440' },
+  optionSelected: { borderColor: colors.metalFlat, borderWidth: 1.5 },
   optionPressed: { opacity: 0.7 },
-  optionText: { color: '#e6e8eb', fontSize: 16 },
-  optionTextSelected: { color: '#a9c1ff' },
+  optionText: { ...typography.body, fontSize: 16 },
+  optionTextSelected: { color: colors.textPrimary },
   continueButton: {
-    marginTop: 12,
-    backgroundColor: '#5b8cff',
-    borderRadius: 12,
+    marginTop: spacing.sm,
+    borderRadius: radius.md,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  continueButtonDisabled: { backgroundColor: '#2a2e37' },
-  continueButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+  continueButtonDisabled: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  continueButtonText: { fontFamily: fontFamily.headerMedium, color: colors.background, fontSize: 16 },
+  continueButtonTextDisabled: { fontFamily: fontFamily.headerMedium, color: colors.textSecondary, fontSize: 16 },
 });

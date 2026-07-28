@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { colors, fontFamily, radius, spacing, typography, MetalGradient } from '../theme';
 
 interface Props {
   onStart: () => void;
@@ -15,10 +16,12 @@ export default function EntryScreen({ onStart }: Props) {
           A few quick questions, then your first day gets built for you.
         </Text>
         <Pressable
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [pressed && styles.buttonPressed]}
           onPress={onStart}
         >
-          <Text style={styles.buttonText}>Start my Reset</Text>
+          <MetalGradient style={styles.button}>
+            <Text style={styles.buttonText}>Start my Reset</Text>
+          </MetalGradient>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -26,11 +29,11 @@ export default function EntryScreen({ onStart }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f1115' },
-  content: { flex: 1, justifyContent: 'center', padding: 32 },
-  title: { color: '#ffffff', fontSize: 34, fontWeight: '700', lineHeight: 40 },
-  subtitle: { color: '#8a8f98', fontSize: 16, marginTop: 16, marginBottom: 40 },
-  button: { backgroundColor: '#5b8cff', borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { flex: 1, justifyContent: 'center', padding: spacing.xxl + spacing.xs },
+  title: { ...typography.screenTitle, fontSize: 34, lineHeight: 40 },
+  subtitle: { ...typography.body, color: colors.textSecondary, fontSize: 16, marginTop: spacing.lg, marginBottom: spacing.xxl + spacing.lg },
+  button: { borderRadius: radius.md, paddingVertical: 18, alignItems: 'center' },
   buttonPressed: { opacity: 0.8 },
-  buttonText: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
+  buttonText: { fontFamily: fontFamily.headerMedium, color: colors.background, fontSize: 17 },
 });

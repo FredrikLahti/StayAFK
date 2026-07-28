@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CravingEvent, GamingControlStatus, RelapseEvent, RelapseSeverity } from '../domain/types';
+import { CravingEvent, GamingControlStatus, GamingControlState, RelapseEvent, RelapseSeverity } from '../domain/types';
 import { GAMING_CONTROL_STATE_LABEL } from '../gamingcontrol/labels';
 import { getRelapseOutcome, WHAT_HAPPENED_OPTIONS } from '../gamingcontrol/relapse';
 import { summarizeCravingEvents } from '../gamingcontrol/cravingStats';
 import { formatEventTimestamp } from '../domain/date';
+import { colors, fontFamily, radius, spacing, typography } from '../theme';
 
 interface Props {
   status: GamingControlStatus;
@@ -20,9 +21,20 @@ const RELAPSE_OPTION_LABEL = Object.fromEntries(
   WHAT_HAPPENED_OPTIONS.map((o) => [o.severity, o.label])
 ) as Record<RelapseSeverity, string>;
 
+// Every state a relapse can resolve into is by definition "serious" - this
+// is the only place the reserved relapse color is allowed to show up
+// outside the relapse trigger/flow itself.
+const RELAPSE_CAUSED_STATES: GamingControlState[] = [
+  'under_pressure',
+  'lapse_interrupted',
+  'pattern_returning',
+  'recovery_active',
+];
+
 export default function GamingControlScreen({ status, cravingEvents, relapseEvents, onBack, onRelapse }: Props) {
   const [modal, setModal] = useState<ModalState>({ kind: 'none' });
   const cravingSummary = summarizeCravingEvents(cravingEvents);
+  const stateIsSerious = RELAPSE_CAUSED_STATES.includes(status.state);
 
   function handleOptionTap(severity: RelapseSeverity) {
     const outcome = getRelapseOutcome(severity);
@@ -38,20 +50,29 @@ export default function GamingControlScreen({ status, cravingEvents, relapseEven
         </Pressable>
 
         <Text style={styles.title}>Gaming Control</Text>
-        <Text style={styles.stateValue}>{GAMING_CONTROL_STATE_LABEL[status.state]}</Text>
+        <Text style={[styles.stateValue, stateIsSerious && styles.stateValueSerious]}>
+          {GAMING_CONTROL_STATE_LABEL[status.state]}
+        </Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Cravings</Text>
-          <Text style={styles.sectionSummary}>
-            {cravingSummary.recentCount} in the last {cravingSummary.recentDays} days · {cravingSummary.total} total
-          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statBlock}>
+              <Text style={styles.statNumber}>{cravingSummary.recentCount}</Text>
+              <Text style={styles.statLabel}>last {cravingSummary.recentDays} days</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statNumber}>{cravingSummary.total}</Text>
+              <Text style={styles.statLabel}>total</Text>
+            </View>
+          </View>
           {cravingEvents.length === 0 ? (
             <Text style={styles.emptyText}>None logged yet.</Text>
           ) : (
             cravingEvents
               .slice(0, 20)
               .map((event) => (
-                <Text key={event.id} style={styles.listItem}>
+                <Text key={event.id} style={styles.listItemMono}>
                   {formatEventTimestamp(event.timestamp)}
                 </Text>
               ))
@@ -65,7 +86,11 @@ export default function GamingControlScreen({ status, cravingEvents, relapseEven
           ) : (
             relapseEvents.map((event) => (
               <Text key={event.id} style={styles.listItem}>
-                {event.date} · {RELAPSE_OPTION_LABEL[event.severity]} → {GAMING_CONTROL_STATE_LABEL[event.resultingAction]}
+                <Text style={styles.listItemMonoInline}>{event.date}</Text>
+                {'  ·  '}
+                {RELAPSE_OPTION_LABEL[event.severity]}
+                {'  →  '}
+                <Text style={styles.relapseInline}>{GAMING_CONTROL_STATE_LABEL[event.resultingAction]}</Text>
               </Text>
             ))
           )}
@@ -113,50 +138,59 @@ export default function GamingControlScreen({ status, cravingEvents, relapseEven
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f1115' },
-  content: { padding: 24, paddingTop: 48, paddingBottom: 96 },
-  backLink: { color: '#5b8cff', fontSize: 14, marginBottom: 20 },
-  title: { color: '#ffffff', fontSize: 24, fontWeight: '700' },
-  stateValue: { color: '#5b8cff', fontSize: 18, fontWeight: '700', marginTop: 4, marginBottom: 28 },
-  section: { marginBottom: 28 },
-  sectionLabel: { color: '#ffffff', fontSize: 15, fontWeight: '700', marginBottom: 6 },
-  sectionSummary: { color: '#8a8f98', fontSize: 13, marginBottom: 10 },
-  emptyText: { color: '#565b66', fontSize: 13 },
-  listItem: { color: '#c7cad1', fontSize: 13, marginBottom: 4 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.xxl, paddingTop: spacing.xxl * 2, paddingBottom: spacing.xxl * 4 },
+  backLink: { color: colors.metalFlat, fontFamily: fontFamily.headerMedium, fontSize: 14, marginBottom: spacing.xl },
+  title: { ...typography.screenTitle },
+  stateValue: { fontFamily: fontFamily.headerBold, color: colors.metalFlat, fontSize: 18, marginTop: spacing.xs, marginBottom: spacing.xxl + spacing.xs },
+  stateValueSerious: { color: colors.relapse },
+  section: { marginBottom: spacing.xxl + spacing.xs },
+  sectionLabel: { ...typography.sectionTitle, marginBottom: spacing.sm - 2 },
+  statsRow: { flexDirection: 'row', gap: spacing.xxl, marginBottom: spacing.md },
+  statBlock: {},
+  statNumber: { ...typography.monoLarge },
+  statLabel: { ...typography.bodyMuted, marginTop: 2 },
+  emptyText: { color: colors.textSecondary, fontSize: 13, opacity: 0.75 },
+  listItem: { ...typography.body, color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs },
+  listItemMono: { ...typography.monoMuted, marginBottom: spacing.xs },
+  listItemMonoInline: { fontFamily: fontFamily.mono, color: colors.textSecondary },
+  relapseInline: { color: colors.relapse, fontFamily: fontFamily.headerMedium },
   relapseButton: {
-    marginTop: 12,
-    backgroundColor: '#3a2323',
-    borderRadius: 12,
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#5a3030',
+    borderColor: colors.relapse,
   },
-  relapseButtonText: { color: '#e07a7a', fontSize: 15, fontWeight: '700' },
+  relapseButtonText: { color: colors.relapse, fontFamily: fontFamily.headerMedium, fontSize: 15 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xxl,
   },
   dialog: {
-    backgroundColor: '#1b1e25',
-    borderRadius: 14,
-    padding: 20,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#2a2e37',
+    borderColor: colors.relapse,
   },
-  dialogTitle: { color: '#ffffff', fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  dialogTitle: { fontFamily: fontFamily.headerBold, color: colors.textPrimary, fontSize: 18, marginBottom: spacing.lg },
   dialogOption: {
-    backgroundColor: '#2a2e37',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    backgroundColor: colors.background,
+    borderRadius: radius.md - 2,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm + spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  dialogOptionText: { color: '#e6e8eb', fontSize: 15, fontWeight: '600' },
-  dialogCancel: { alignItems: 'center', paddingVertical: 8 },
-  dialogCancelText: { color: '#565b66', fontSize: 14 },
+  dialogOptionText: { fontFamily: fontFamily.headerMedium, color: colors.textPrimary, fontSize: 15 },
+  dialogCancel: { alignItems: 'center', paddingVertical: spacing.sm },
+  dialogCancelText: { color: colors.textSecondary, fontSize: 14, opacity: 0.75 },
 });

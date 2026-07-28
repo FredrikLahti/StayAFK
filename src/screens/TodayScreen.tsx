@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AssignmentLibraryEntry, DayPart, PhaseName, ScheduleSlot, SlotStatus } from '../domain/types';
 import SlotCard from './SlotCard';
+import { colors, fontFamily, radius, spacing, typography, MetalGradient } from '../theme';
 
 interface Props {
   date: string;
@@ -29,6 +30,10 @@ function groupByWindow(slots: ScheduleSlot[]): Record<DayPart, ScheduleSlot[]> {
   return groups;
 }
 
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 export default function TodayScreen({
   date,
   phase,
@@ -46,7 +51,9 @@ export default function TodayScreen({
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.date}>{date}</Text>
-            <Text style={styles.phase}>Phase: {phase}</Text>
+            <MetalGradient style={styles.phaseBadge}>
+              <Text style={styles.phaseBadgeText}>{capitalize(phase)}</Text>
+            </MetalGradient>
           </View>
           <Pressable onPress={onOpenGamingControl}>
             <Text style={styles.gamingControlLink}>Gaming Control</Text>
@@ -80,14 +87,27 @@ export default function TodayScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f1115' },
-  content: { padding: 24, paddingTop: 48, paddingBottom: 48 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  date: { color: '#8a8f98', fontSize: 14 },
-  phase: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginTop: 4 },
-  gamingControlLink: { color: '#5b8cff', fontSize: 13, fontWeight: '600', marginTop: 4 },
-  windowBlock: { marginBottom: 20 },
-  windowLabel: { color: '#5b8cff', fontSize: 13, fontWeight: '700', letterSpacing: 1, marginBottom: 8 },
-  restartLink: { marginTop: 24, alignItems: 'center' },
-  restartLinkText: { color: '#565b66', fontSize: 13, textDecorationLine: 'underline' },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.xxl, paddingTop: spacing.xxl * 2, paddingBottom: spacing.xxl * 2 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.xxl },
+  date: { ...typography.monoMuted },
+  phaseBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+  },
+  phaseBadgeText: { fontFamily: fontFamily.headerBold, color: colors.background, fontSize: 15 },
+  gamingControlLink: { color: colors.metalFlat, fontFamily: fontFamily.headerMedium, fontSize: 13, marginTop: spacing.xs },
+  windowBlock: { marginBottom: spacing.xl },
+  windowLabel: {
+    color: colors.metalFlat,
+    fontFamily: fontFamily.headerMedium,
+    fontSize: 13,
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  restartLink: { marginTop: spacing.xxl, alignItems: 'center' },
+  restartLinkText: { color: colors.textSecondary, fontSize: 13, textDecorationLine: 'underline', opacity: 0.75 },
 });

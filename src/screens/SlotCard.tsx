@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AssignmentLibraryEntry, ScheduleSlot, SlotStatus } from '../domain/types';
 import { shouldTriggerHonestyCheck } from '../checkin/honestyCheck';
 import { HONESTY_ACCEPTED_MESSAGE, HONESTY_REJECTED_MESSAGE } from '../checkin/messages';
+import { colors, fontFamily, radius, spacing, typography, SLOT_STATUS_COLOR } from '../theme';
 
 interface Props {
   slot: ScheduleSlot;
@@ -96,7 +97,9 @@ export default function SlotCard({ slot, library, onCheckIn }: Props) {
         </View>
       ) : (
         <View style={styles.statusRow}>
-          <Text style={styles.statusText}>{STATUS_LABEL[slot.status]}</Text>
+          <Text style={[styles.statusText, { color: SLOT_STATUS_COLOR[slot.status] }]}>
+            {STATUS_LABEL[slot.status]}
+          </Text>
           {equivalent && <Text style={styles.equivalentText}>Logged instead: {equivalent.description}</Text>}
         </View>
       )}
@@ -150,52 +153,56 @@ export default function SlotCard({ slot, library, onCheckIn }: Props) {
 
 const styles = StyleSheet.create({
   slotCard: {
-    backgroundColor: '#1b1e25',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md + spacing.xs,
+    marginBottom: spacing.sm + spacing.xs,
     borderWidth: 1,
-    borderColor: '#2a2e37',
+    borderColor: colors.border,
   },
-  slotHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  slotDomain: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  slotDuration: { color: '#8a8f98', fontSize: 14 },
-  slotActivity: { color: '#c7cad1', fontSize: 14, marginBottom: 10 },
-  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slotHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs + 2 },
+  slotDomain: { fontFamily: fontFamily.headerMedium, color: colors.textPrimary, fontSize: 16 },
+  slotDuration: { ...typography.monoMuted },
+  slotActivity: { ...typography.body, color: colors.textSecondary, fontSize: 14, marginBottom: spacing.sm + spacing.xs },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   actionButton: {
-    backgroundColor: '#2a2e37',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    backgroundColor: colors.background,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  actionText: { color: '#e6e8eb', fontSize: 13, fontWeight: '600' },
+  actionText: { fontFamily: fontFamily.headerMedium, color: colors.textPrimary, fontSize: 13 },
   statusRow: { marginTop: 2 },
-  statusText: { color: '#5b8cff', fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
-  equivalentText: { color: '#8a8f98', fontSize: 13, marginTop: 4 },
+  statusText: { fontFamily: fontFamily.headerMedium, fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
+  equivalentText: { ...typography.bodyMuted, marginTop: spacing.xs },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xxl,
   },
   dialog: {
-    backgroundColor: '#1b1e25',
-    borderRadius: 14,
-    padding: 20,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#2a2e37',
+    borderColor: colors.border,
   },
-  dialogTitle: { color: '#ffffff', fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  dialogTitle: { fontFamily: fontFamily.headerBold, color: colors.textPrimary, fontSize: 18, marginBottom: spacing.lg },
   dialogOption: {
-    backgroundColor: '#2a2e37',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    backgroundColor: colors.background,
+    borderRadius: radius.md - 2,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm + spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  dialogOptionText: { color: '#e6e8eb', fontSize: 15, fontWeight: '600' },
-  dialogCancel: { alignItems: 'center', paddingVertical: 8 },
-  dialogCancelText: { color: '#565b66', fontSize: 14 },
+  dialogOptionText: { fontFamily: fontFamily.headerMedium, color: colors.textPrimary, fontSize: 15 },
+  dialogCancel: { alignItems: 'center', paddingVertical: spacing.sm },
+  dialogCancelText: { color: colors.textSecondary, fontSize: 14, opacity: 0.75 },
 });
