@@ -166,6 +166,10 @@ export type NotificationIntensity = 'minimal' | 'detailed';
 
 export interface NotificationSettings {
   intensity: NotificationIntensity;
+  // Set when the person responds "I'm good, don't need this" to the
+  // silence-based life-check message - stops all future local
+  // notifications without forcing an uninstall.
+  notificationsPaused: boolean;
 }
 
 export type PurchasePlatform = 'ios' | 'android' | 'web';

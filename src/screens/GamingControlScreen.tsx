@@ -13,6 +13,9 @@ interface Props {
   relapseEvents: RelapseEvent[];
   onBack: () => void;
   onRelapse: (severity: RelapseSeverity) => void;
+  // Opens straight into "What happened?" - used when arriving here via the
+  // silence check-in prompt's "Something's up" path.
+  autoOpenWhatHappened?: boolean;
 }
 
 type ModalState = { kind: 'none' } | { kind: 'whatHappened' } | { kind: 'outcome'; message: string };
@@ -31,8 +34,15 @@ const RELAPSE_CAUSED_STATES: GamingControlState[] = [
   'recovery_active',
 ];
 
-export default function GamingControlScreen({ status, cravingEvents, relapseEvents, onBack, onRelapse }: Props) {
-  const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+export default function GamingControlScreen({
+  status,
+  cravingEvents,
+  relapseEvents,
+  onBack,
+  onRelapse,
+  autoOpenWhatHappened,
+}: Props) {
+  const [modal, setModal] = useState<ModalState>(autoOpenWhatHappened ? { kind: 'whatHappened' } : { kind: 'none' });
   const cravingSummary = summarizeCravingEvents(cravingEvents);
   const stateIsSerious = RELAPSE_CAUSED_STATES.includes(status.state);
 

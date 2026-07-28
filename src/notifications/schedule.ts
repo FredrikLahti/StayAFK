@@ -33,6 +33,7 @@ function toNativeTrigger(trigger: NotificationTrigger): Notifications.Schedulabl
 export async function syncDailyNotifications(params: {
   intensity: NotificationIntensity;
   slots: ScheduleSlot[];
+  notificationsPaused?: boolean;
   now?: Date;
 }): Promise<void> {
   try {
@@ -42,6 +43,7 @@ export async function syncDailyNotifications(params: {
       intensity: params.intensity,
       slots: params.slots,
       now: params.now ?? new Date(),
+      notificationsPaused: params.notificationsPaused,
     });
 
     for (const item of plan) {

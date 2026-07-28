@@ -73,3 +73,14 @@ export async function checkInScheduleSlot(id: string, checkIn: ScheduleSlotCheck
     id,
   ]);
 }
+
+// The most recent date with at least one acted-upon (non-pending) slot -
+// used by the silence-based relapse signal to find the last day the person
+// actually touched their schedule.
+export async function getMostRecentActiveScheduleDate(): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ maxDate: string | null }>(
+    "SELECT MAX(date) as maxDate FROM schedule_slot WHERE status != 'pending'"
+  );
+  return row?.maxDate ?? null;
+}

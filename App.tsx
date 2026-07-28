@@ -31,6 +31,7 @@ import {
   getAssignmentLibrary,
   getCravingEvents,
   getFoundationStatuses,
+  getMostRecentActiveScheduleDate,
   getPhase,
   getRelapseEvents,
   getScheduleSlotsForDate,
@@ -39,6 +40,7 @@ import {
   logCravingEvent,
   logRelapseEvent,
   markPurchased,
+  pauseNotifications,
   saveUserProfile,
   startResetPhase,
   updateFoundationActivityStates,
@@ -48,6 +50,7 @@ import {
 import { todayISODate } from './src/domain/date';
 import { generateAndPersistDay } from './src/dayGenerator';
 import { applyRelapseToFoundationStatuses, getRelapseOutcome } from './src/gamingcontrol/relapse';
+import { daysBetween, getLastActivityDate, getSilenceLevel, SilenceLevel } from './src/gamingcontrol/silence';
 import { colors, FONTS_TO_LOAD } from './src/theme';
 import { isTrialExpired } from './src/purchase/trial';
 import {
@@ -71,6 +74,7 @@ interface TodayData extends CoreData {
   date: string;
   slots: ScheduleSlot[];
   library: AssignmentLibraryEntry[];
+  silenceLevel: SilenceLevel;
 }
 
 type ReturnableState = ({ screen: 'today' } & TodayData) | ({ screen: 'paywall' } & CoreData);
@@ -80,7 +84,12 @@ type AppState =
   | { screen: 'entry' }
   | { screen: 'onboarding' }
   | ({ screen: 'today' } & TodayData)
-  | ({ screen: 'gamingControl'; cravingEvents: CravingEvent[]; relapseEvents: RelapseEvent[] } & TodayData)
+  | ({
+      screen: 'gamingControl';
+      cravingEvents: CravingEvent[];
+      relapseEvents: RelapseEvent[];
+      autoOpenWhatHappened?: boolean;
+    } & TodayData)
   | { screen: 'settings'; returnTo: ReturnableState }
   | ({ screen: 'paywall' } & CoreData);
 
@@ -127,6 +136,25 @@ export default function App() {
     await showTodayFor(profile);
   }
 
+  async function computeSilenceLevel(phase: Phase, notificationSettings: NotificationSettings): Promise<SilenceLevel> {
+    if (notificationSettings.notificationsPaused) return 'none';
+
+    const [mostRecentActiveScheduleDate, cravingEvents, relapseEvents] = await Promise.all([
+      getMostRecentActiveScheduleDate(),
+      getCravingEvents(),
+      getRelapseEvents(),
+    ]);
+
+    const lastActivityDate = getLastActivityDate({
+      mostRecentActiveScheduleDate,
+      cravingEventDates: cravingEvents.map((e) => e.timestamp.slice(0, 10)),
+      relapseEventDates: relapseEvents.map((e) => e.date),
+      fallbackDate: phase.phaseStartDate.slice(0, 10),
+    });
+
+    return getSilenceLevel(daysBetween(lastActivityDate, todayISODate()));
+  }
+
   async function showTodayFor(profile: UserProfile) {
     const date = todayISODate();
     const phase = (await getPhase()) ?? (await startResetPhase(new Date().toISOString()));
@@ -145,8 +173,23 @@ export default function App() {
     }
 
     const library = await getAssignmentLibrary();
-    await syncDailyNotifications({ intensity: notificationSettings.intensity, slots });
-    setState({ screen: 'today', date, phase, slots, library, gamingControl, notificationSettings, purchaseStatus });
+    const silenceLevel = await computeSilenceLevel(phase, notificationSettings);
+    await syncDailyNotifications({
+      intensity: notificationSettings.intensity,
+      slots,
+      notificationsPaused: notificationSettings.notificationsPaused,
+    });
+    setState({
+      screen: 'today',
+      date,
+      phase,
+      slots,
+      library,
+      gamingControl,
+      notificationSettings,
+      purchaseStatus,
+      silenceLevel,
+    });
   }
 
   async function handleOnboardingComplete(answers: Omit<UserProfile, 'id' | 'createdAt'>) {
@@ -167,11 +210,17 @@ export default function App() {
     await checkInScheduleSlot(slotId, update);
     if (state.screen === 'today' || state.screen === 'gamingControl') {
       const updatedSlots = state.slots.map((s) => (s.id === slotId ? { ...s, ...update } : s));
-      await syncDailyNotifications({ intensity: state.notificationSettings.intensity, slots: updatedSlots });
+      await syncDailyNotifications({
+        intensity: state.notificationSettings.intensity,
+        slots: updatedSlots,
+        notificationsPaused: state.notificationSettings.notificationsPaused,
+      });
     }
+    // Any check-in is activity - clears silence immediately rather than
+    // waiting for the next full recompute.
     setState((prev) =>
       prev.screen === 'today' || prev.screen === 'gamingControl'
-        ? { ...prev, slots: prev.slots.map((s) => (s.id === slotId ? { ...s, ...update } : s)) }
+        ? { ...prev, slots: prev.slots.map((s) => (s.id === slotId ? { ...s, ...update } : s)), silenceLevel: 'none' }
         : prev
     );
   }
@@ -179,7 +228,11 @@ export default function App() {
   async function handleLogCraving() {
     const event = await logCravingEvent();
     setState((prev) =>
-      prev.screen === 'gamingControl' ? { ...prev, cravingEvents: [event, ...prev.cravingEvents] } : prev
+      prev.screen === 'gamingControl'
+        ? { ...prev, cravingEvents: [event, ...prev.cravingEvents], silenceLevel: 'none' }
+        : prev.screen === 'today'
+          ? { ...prev, silenceLevel: 'none' }
+          : prev
     );
   }
 
@@ -193,9 +246,22 @@ export default function App() {
   function handleBackToToday() {
     setState((prev) => {
       if (prev.screen !== 'gamingControl') return prev;
-      const { cravingEvents, relapseEvents, ...todayData } = prev;
+      const { cravingEvents, relapseEvents, autoOpenWhatHappened, ...todayData } = prev;
       return { ...todayData, screen: 'today' };
     });
+  }
+
+  // Reached via the silence check-in prompt's "Something's up" - opens
+  // Gaming Control straight into the same "What happened?" flow used for
+  // an explicit relapse trigger. Silence alone never logs a relapse; this
+  // only offers the path in.
+  async function handleSomethingsUp() {
+    const [cravingEvents, relapseEvents] = await Promise.all([getCravingEvents(), getRelapseEvents()]);
+    setState((prev) =>
+      prev.screen === 'today'
+        ? { ...prev, screen: 'gamingControl', cravingEvents, relapseEvents, autoOpenWhatHappened: true }
+        : prev
+    );
   }
 
   async function handleRelapse(severity: RelapseSeverity) {
@@ -214,6 +280,7 @@ export default function App() {
         ...prev,
         gamingControl: { ...prev.gamingControl, state: outcome.resultingState },
         relapseEvents: [event, ...prev.relapseEvents],
+        silenceLevel: 'none',
       };
     });
   }
@@ -231,10 +298,35 @@ export default function App() {
   async function handleChangeNotificationIntensity(intensity: NotificationIntensity) {
     await updateNotificationIntensity(intensity);
     if (state.screen === 'settings' && state.returnTo.screen === 'today') {
-      await syncDailyNotifications({ intensity, slots: state.returnTo.slots });
+      await syncDailyNotifications({
+        intensity,
+        slots: state.returnTo.slots,
+        notificationsPaused: state.returnTo.notificationSettings.notificationsPaused,
+      });
     }
     setState((prev) =>
-      prev.screen === 'settings' ? { ...prev, returnTo: { ...prev.returnTo, notificationSettings: { intensity } } } : prev
+      prev.screen === 'settings'
+        ? { ...prev, returnTo: { ...prev.returnTo, notificationSettings: { ...prev.returnTo.notificationSettings, intensity } } }
+        : prev
+    );
+  }
+
+  // "I'm good, don't need this" from the silence-based life-check message -
+  // stops all future local notifications; the app otherwise just goes
+  // quiet, no forced uninstall.
+  async function handleOptOutOfNotifications() {
+    await pauseNotifications();
+    if (state.screen === 'today' || state.screen === 'gamingControl') {
+      await syncDailyNotifications({ intensity: state.notificationSettings.intensity, slots: [], notificationsPaused: true });
+    }
+    setState((prev) =>
+      prev.screen === 'today' || prev.screen === 'gamingControl'
+        ? {
+            ...prev,
+            notificationSettings: { ...prev.notificationSettings, notificationsPaused: true },
+            silenceLevel: 'none',
+          }
+        : prev
     );
   }
 
@@ -314,6 +406,7 @@ export default function App() {
           relapseEvents={state.relapseEvents}
           onBack={handleBackToToday}
           onRelapse={handleRelapse}
+          autoOpenWhatHappened={state.autoOpenWhatHappened}
         />
         <CravingButton onPress={handleLogCraving} />
         <StatusBar style="light" />
@@ -328,10 +421,13 @@ export default function App() {
         phase={state.phase.currentPhase}
         slots={state.slots}
         library={state.library}
+        silenceLevel={state.silenceLevel}
         onRestartOnboarding={handleRestartOnboarding}
         onCheckIn={handleCheckIn}
         onOpenGamingControl={handleOpenGamingControl}
         onOpenSettings={handleOpenSettings}
+        onSomethingsUp={handleSomethingsUp}
+        onOptOutOfNotifications={handleOptOutOfNotifications}
       />
       <CravingButton onPress={handleLogCraving} />
       <StatusBar style="light" />

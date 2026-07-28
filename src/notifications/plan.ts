@@ -57,9 +57,20 @@ export interface NotificationPlanParams {
   intensity: NotificationIntensity;
   slots: ScheduleSlot[];
   now: Date;
+  // Set once someone responds "I'm good, don't need this" to the
+  // silence-based life-check message - no further notifications of any
+  // kind get scheduled.
+  notificationsPaused?: boolean;
 }
 
-export function computeNotificationPlan({ intensity, slots, now }: NotificationPlanParams): PlannedNotification[] {
+export function computeNotificationPlan({
+  intensity,
+  slots,
+  now,
+  notificationsPaused,
+}: NotificationPlanParams): PlannedNotification[] {
+  if (notificationsPaused) return [];
+
   const plan: PlannedNotification[] = [];
 
   // Always scheduled, regardless of intensity or today's pending state -

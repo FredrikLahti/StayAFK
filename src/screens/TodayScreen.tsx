@@ -2,6 +2,8 @@ import React from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AssignmentLibraryEntry, DayPart, PhaseName, ScheduleSlot, SlotStatus } from '../domain/types';
 import SlotCard from './SlotCard';
+import SilenceModal from './SilenceModal';
+import { SilenceLevel } from '../gamingcontrol/silence';
 import { colors, fontFamily, radius, spacing, typography, MetalGradient } from '../theme';
 
 interface Props {
@@ -9,10 +11,13 @@ interface Props {
   phase: PhaseName;
   slots: ScheduleSlot[];
   library: AssignmentLibraryEntry[];
+  silenceLevel: SilenceLevel;
   onRestartOnboarding: () => void;
   onCheckIn: (slotId: string, update: { status: SlotStatus; equivalentActivityId: string | null }) => void;
   onOpenGamingControl: () => void;
   onOpenSettings: () => void;
+  onSomethingsUp: () => void;
+  onOptOutOfNotifications: () => void;
 }
 
 const WINDOW_ORDER: DayPart[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -40,10 +45,13 @@ export default function TodayScreen({
   phase,
   slots,
   library,
+  silenceLevel,
   onRestartOnboarding,
   onCheckIn,
   onOpenGamingControl,
   onOpenSettings,
+  onSomethingsUp,
+  onOptOutOfNotifications,
 }: Props) {
   const groups = groupByWindow(slots);
 
@@ -89,6 +97,12 @@ export default function TodayScreen({
           <Text style={styles.restartLinkText}>Restart onboarding</Text>
         </Pressable>
       </ScrollView>
+
+      <SilenceModal
+        level={silenceLevel}
+        onSomethingsUp={onSomethingsUp}
+        onOptOutOfNotifications={onOptOutOfNotifications}
+      />
     </SafeAreaView>
   );
 }

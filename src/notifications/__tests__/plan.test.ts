@@ -83,4 +83,11 @@ describe('computeNotificationPlan', () => {
     const b = computeNotificationPlan({ intensity: 'detailed', slots, now });
     expect(a).toEqual(b);
   });
+
+  it('schedules nothing at all once notifications are paused, regardless of pending state', () => {
+    const now = new Date('2026-07-28T10:00:00');
+    const slots = [makeSlot({ status: 'pending' })];
+    const plan = computeNotificationPlan({ intensity: 'detailed', slots, now, notificationsPaused: true });
+    expect(plan).toEqual([]);
+  });
 });

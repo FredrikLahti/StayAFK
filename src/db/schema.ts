@@ -96,7 +96,8 @@ CREATE INDEX IF NOT EXISTS idx_relapse_event_date ON relapse_event(date);
 
 CREATE TABLE IF NOT EXISTS notification_settings (
   id TEXT PRIMARY KEY NOT NULL,
-  intensity TEXT NOT NULL
+  intensity TEXT NOT NULL,
+  notifications_paused INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS purchase_status (
