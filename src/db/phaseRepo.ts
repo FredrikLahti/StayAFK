@@ -22,14 +22,17 @@ export async function getPhase(): Promise<Phase | null> {
   return row ? rowToPhase(row) : null;
 }
 
-// Reset phase always starts on the day "Reset me" is triggered - Stage 1
-// does not yet implement automatic phase transitions.
-export async function startResetPhase(startDate: string): Promise<Phase> {
+// Reset phase always starts at the exact moment "Reset me" is triggered -
+// phaseStartDate is a full ISO timestamp (not just a date) so the 72-hour
+// free trial gets a real, precise 72 hours regardless of what time of day
+// someone starts. Stage 1 does not yet implement automatic phase
+// transitions past 'reset'.
+export async function startResetPhase(startTimestamp: string): Promise<Phase> {
   const db = await getDb();
   await db.runAsync(
     `INSERT INTO phase (id, current_phase, phase_start_date) VALUES (?, 'reset', ?)
      ON CONFLICT(id) DO UPDATE SET current_phase = 'reset', phase_start_date = excluded.phase_start_date`,
-    [CURRENT_ID, startDate]
+    [CURRENT_ID, startTimestamp]
   );
-  return { currentPhase: 'reset', phaseStartDate: startDate };
+  return { currentPhase: 'reset', phaseStartDate: startTimestamp };
 }

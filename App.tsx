@@ -129,7 +129,7 @@ export default function App() {
 
   async function showTodayFor(profile: UserProfile) {
     const date = todayISODate();
-    const phase = (await getPhase()) ?? (await startResetPhase(date));
+    const phase = (await getPhase()) ?? (await startResetPhase(new Date().toISOString()));
     const gamingControl = await ensureGamingControlStatus();
     const notificationSettings = await ensureNotificationSettings();
     const purchaseStatus = await ensurePurchaseStatus();
@@ -151,8 +151,7 @@ export default function App() {
 
   async function handleOnboardingComplete(answers: Omit<UserProfile, 'id' | 'createdAt'>) {
     const profile = await saveUserProfile(answers);
-    const date = todayISODate();
-    await startResetPhase(date);
+    await startResetPhase(new Date().toISOString());
     await requestNotificationPermissions();
     await showTodayFor(profile);
   }

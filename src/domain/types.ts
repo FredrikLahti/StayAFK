@@ -52,6 +52,9 @@ export type PhaseName = 'reset' | 'saturation' | 'stabilisation' | 'autonomy';
 
 export interface Phase {
   currentPhase: PhaseName;
+  // Full ISO timestamp (date + time), not just a date - the free trial is
+  // anchored to this exact moment so everyone gets a full 72 hours
+  // regardless of what time of day they start.
   phaseStartDate: string;
 }
 
