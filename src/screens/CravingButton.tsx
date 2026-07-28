@@ -37,7 +37,7 @@ export default function CravingButton({ onPress }: Props) {
       onPress={handlePress}
       testID="craving-button"
     >
-      <MetalGradient style={styles.button}>
+      <MetalGradient style={styles.button} glow>
         <Text style={styles.text}>{justLogged ? 'Logged' : 'Craving'}</Text>
       </MetalGradient>
     </Pressable>

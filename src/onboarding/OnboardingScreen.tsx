@@ -95,7 +95,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
               disabled={!canContinue}
             >
               {canContinue ? (
-                <MetalGradient style={styles.continueButton}>
+                <MetalGradient style={styles.continueButton} glow>
                   <Text style={styles.continueButtonText}>Continue</Text>
                 </MetalGradient>
               ) : (

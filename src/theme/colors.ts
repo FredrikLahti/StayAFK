@@ -13,10 +13,11 @@ export const colors = {
   // itself, which is reserved for the Phase badge, primary buttons, and
   // progress/fill elements.
   metalFlat: '#C9CFD6',
+  // Wide, high-contrast 5-stop sweep (deep shadow -> mid steel -> bright
+  // near-white highlight -> mid steel -> deep shadow) - reads as polished
+  // chrome under a single studio light rather than a flat gray tint.
   metal: {
-    start: '#7A8088',
-    mid: '#E4E7EA',
-    end: '#5C6169',
+    stops: ['#2A2D33', '#9AA0A8', '#F5F6F8', '#9AA0A8', '#1B1D21'] as const,
   },
 
   status: {

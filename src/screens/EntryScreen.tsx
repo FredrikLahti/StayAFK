@@ -19,7 +19,7 @@ export default function EntryScreen({ onStart }: Props) {
           style={({ pressed }) => [pressed && styles.buttonPressed]}
           onPress={onStart}
         >
-          <MetalGradient style={styles.button}>
+          <MetalGradient style={styles.button} glow>
             <Text style={styles.buttonText}>Start my Reset</Text>
           </MetalGradient>
         </Pressable>
