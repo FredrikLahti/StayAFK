@@ -38,3 +38,19 @@ export async function seedInitialFoundationStatusesIfEmpty(): Promise<void> {
     );
   }
 }
+
+// Persists currentActivityState only - established_capacity_minutes and
+// consecutive_days are deliberately left alone here; see
+// applyRelapseToFoundationStatuses in gamingcontrol/relapse.ts for the rules
+// on what a relapse is allowed to change.
+export async function updateFoundationActivityStates(statuses: FoundationStatus[]): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    for (const status of statuses) {
+      await db.runAsync('UPDATE foundation_status SET current_activity_state = ? WHERE domain = ?', [
+        status.currentActivityState,
+        status.domain,
+      ]);
+    }
+  });
+}

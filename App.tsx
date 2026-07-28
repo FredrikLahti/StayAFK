@@ -22,6 +22,7 @@ import {
   ensureGamingControlStatus,
   getAssignmentLibrary,
   getCravingEvents,
+  getFoundationStatuses,
   getPhase,
   getRelapseEvents,
   getScheduleSlotsForDate,
@@ -31,11 +32,12 @@ import {
   logRelapseEvent,
   saveUserProfile,
   startResetPhase,
+  updateFoundationActivityStates,
   updateGamingControlState,
 } from './src/db';
 import { todayISODate } from './src/domain/date';
 import { generateAndPersistDay } from './src/dayGenerator';
-import { getRelapseOutcome } from './src/gamingcontrol/relapse';
+import { applyRelapseToFoundationStatuses, getRelapseOutcome } from './src/gamingcontrol/relapse';
 
 interface TodayData {
   date: string;
@@ -135,6 +137,11 @@ export default function App() {
     const outcome = getRelapseOutcome(severity);
     const event = await logRelapseEvent(date, severity, outcome.resultingState);
     await updateGamingControlState(outcome.resultingState);
+
+    const foundationStatuses = await getFoundationStatuses();
+    const updatedStatuses = applyRelapseToFoundationStatuses(severity, foundationStatuses);
+    await updateFoundationActivityStates(updatedStatuses);
+
     setState((prev) => {
       if (prev.screen !== 'gamingControl') return prev;
       return {

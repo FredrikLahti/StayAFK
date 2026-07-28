@@ -1,8 +1,9 @@
 // Pure mapping from a relapse severity (the "What happened?" tap options)
-// to its resulting GamingControlState and the exact copy to show. This is
-// the only thing a relapse in this scoped Stage 3 pass is allowed to
-// affect - it never touches FoundationStatus/established_capacity.
-import { GamingControlState, RelapseSeverity } from '../domain/types';
+// to its resulting GamingControlState, the exact copy to show, and the
+// effect on each domain's FoundationStatus.currentActivityState.
+// established_capacity is the one hard rule: it is never touched or
+// discounted by any relapse, regardless of severity.
+import { ActivityState, FoundationStatus, GamingControlState, RelapseSeverity } from '../domain/types';
 
 export interface RelapseOutcome {
   resultingState: GamingControlState;
@@ -40,3 +41,31 @@ export const WHAT_HAPPENED_OPTIONS: { label: string; severity: RelapseSeverity }
   { label: 'I played for a while', severity: 'several_days' },
   { label: 'Gaming has taken over again', severity: 'full_return' },
 ];
+
+const ACTIVITY_STAGE_ORDER: ActivityState[] = ['restarted', 'repeating', 'established', 'self_sustaining'];
+
+// Drops a single domain's activity state back exactly one stage, floored at
+// 'restarted' (never goes below it).
+function dropOneStage(state: ActivityState): ActivityState {
+  const index = ACTIVITY_STAGE_ORDER.indexOf(state);
+  return ACTIVITY_STAGE_ORDER[Math.max(0, index - 1)];
+}
+
+// Applies a relapse's effect on FoundationStatus.currentActivityState across
+// every domain - established_capacity (and everything else on the record)
+// is passed through untouched in all three cases:
+//   short_lapse   -> no change to any domain
+//   several_days  -> every domain drops back exactly one stage (floored)
+//   full_return   -> every domain resets to 'restarted'
+export function applyRelapseToFoundationStatuses(
+  severity: RelapseSeverity,
+  statuses: FoundationStatus[]
+): FoundationStatus[] {
+  if (severity === 'short_lapse') {
+    return statuses;
+  }
+  if (severity === 'full_return') {
+    return statuses.map((status) => ({ ...status, currentActivityState: 'restarted' }));
+  }
+  return statuses.map((status) => ({ ...status, currentActivityState: dropOneStage(status.currentActivityState) }));
+}
