@@ -12,6 +12,7 @@ interface Props {
   onRestartOnboarding: () => void;
   onCheckIn: (slotId: string, update: { status: SlotStatus; equivalentActivityId: string | null }) => void;
   onOpenGamingControl: () => void;
+  onOpenSettings: () => void;
 }
 
 const WINDOW_ORDER: DayPart[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -42,6 +43,7 @@ export default function TodayScreen({
   onRestartOnboarding,
   onCheckIn,
   onOpenGamingControl,
+  onOpenSettings,
 }: Props) {
   const groups = groupByWindow(slots);
 
@@ -55,9 +57,14 @@ export default function TodayScreen({
               <Text style={styles.phaseBadgeText}>{capitalize(phase)}</Text>
             </MetalGradient>
           </View>
-          <Pressable onPress={onOpenGamingControl}>
-            <Text style={styles.gamingControlLink}>Gaming Control</Text>
-          </Pressable>
+          <View style={styles.headerLinks}>
+            <Pressable onPress={onOpenGamingControl}>
+              <Text style={styles.gamingControlLink}>Gaming Control</Text>
+            </Pressable>
+            <Pressable onPress={onOpenSettings}>
+              <Text style={styles.settingsLink}>Settings</Text>
+            </Pressable>
+          </View>
         </View>
 
         {WINDOW_ORDER.map((window) => {
@@ -99,7 +106,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   phaseBadgeText: { fontFamily: fontFamily.headerBold, color: colors.background, fontSize: 15 },
+  headerLinks: { alignItems: 'flex-end', gap: spacing.sm },
   gamingControlLink: { color: colors.metalFlat, fontFamily: fontFamily.headerMedium, fontSize: 13, marginTop: spacing.xs },
+  settingsLink: { color: colors.textSecondary, fontFamily: fontFamily.headerMedium, fontSize: 13 },
   windowBlock: { marginBottom: spacing.xl },
   windowLabel: {
     color: colors.metalFlat,

@@ -1,6 +1,4 @@
 // Core data model, mirroring ARCHITECTURE.md's "Core data model" section.
-// NotificationSettings/PurchaseStatus are later-stage concerns and are
-// intentionally omitted here.
 
 export type Domain = 'Sleep' | 'Move' | 'Fuel' | 'Connect' | 'Build' | 'Live' | 'Maintain';
 
@@ -156,4 +154,21 @@ export interface RelapseEvent {
   severity: RelapseSeverity;
   // The GamingControlState the relapse resolved into.
   resultingAction: GamingControlState;
+}
+
+// A simple overall level rather than true per-category granularity - Stage
+// 4 explicitly allows this simplification ("a simple overall level if
+// per-category is overkill for now").
+export type NotificationIntensity = 'minimal' | 'detailed';
+
+export interface NotificationSettings {
+  intensity: NotificationIntensity;
+}
+
+export type PurchasePlatform = 'ios' | 'android' | 'web';
+
+export interface PurchaseStatus {
+  isUnlocked: boolean;
+  purchaseDate: string | null;
+  platform: PurchasePlatform | null;
 }
