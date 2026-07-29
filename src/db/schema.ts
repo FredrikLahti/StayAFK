@@ -105,4 +105,10 @@ CREATE TABLE IF NOT EXISTS purchase_status (
   purchase_date TEXT,
   platform TEXT
 );
+
+CREATE TABLE IF NOT EXISTS motivational_nudge_status (
+  id TEXT PRIMARY KEY NOT NULL,
+  last_spike_nudge_shown_at TEXT,
+  fallback_nudge_shown INTEGER NOT NULL DEFAULT 0
+);
 `;

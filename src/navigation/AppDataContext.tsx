@@ -5,6 +5,7 @@ import {
   DomainFloor,
   FoundationStatus,
   GamingControlStatus,
+  MotivationalNudgeStatus,
   NotificationIntensity,
   NotificationSettings,
   Phase,
@@ -18,6 +19,7 @@ import {
 import {
   checkInScheduleSlot,
   ensureGamingControlStatus,
+  ensureMotivationalNudgeStatus,
   ensureNotificationSettings,
   ensurePurchaseStatus,
   getAssignmentLibrary,
@@ -32,7 +34,9 @@ import {
   initDatabase,
   logCravingEvent,
   logRelapseEvent,
+  markFallbackNudgeShown,
   markPurchased,
+  markSpikeNudgeShown,
   pauseNotifications,
   saveUserProfile,
   startResetPhase,
@@ -44,6 +48,9 @@ import { todayISODate } from '../domain/date';
 import { generateAndPersistDay } from '../dayGenerator';
 import { applyRelapseToFoundationStatuses, getRelapseOutcome } from '../gamingcontrol/relapse';
 import { daysBetween, getLastActivityDate, getSilenceLevel, SilenceLevel } from '../gamingcontrol/silence';
+import { detectCravingSpike, shouldShowSpikeNudge } from '../gamingcontrol/cravingSpike';
+import { shouldShowFallbackNudge } from '../gamingcontrol/fallbackNudge';
+import { pickNudgeMessage } from '../gamingcontrol/nudgeMessages';
 import { isTrialExpired } from '../purchase/trial';
 import {
   PLACEHOLDER_PRICE_DISPLAY,
@@ -70,14 +77,21 @@ interface ReadyState {
   library: AssignmentLibraryEntry[];
   silenceLevel: SilenceLevel;
   todayDate: string;
+  motivationalNudgeStatus: MotivationalNudgeStatus;
 }
 
 type BootState = { kind: 'loading' } | { kind: 'needsOnboarding' } | ({ kind: 'ready' } & ReadyState);
+
+export interface ActiveNudge {
+  kind: 'spike' | 'fallback';
+  message: string;
+}
 
 export interface ReadyAppData extends ReadyState {
   todaySlots: ScheduleSlot[];
   priceDisplay: string;
   isPaywalled: boolean;
+  activeNudge: ActiveNudge | null;
 }
 
 interface AppDataValue {
@@ -96,6 +110,7 @@ interface AppDataValue {
   optOutOfNotifications: () => Promise<void>;
   unlock: () => Promise<void>;
   restore: () => Promise<boolean>;
+  acknowledgeMotivationalNudge: () => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataValue | null>(null);
@@ -136,13 +151,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       todaySlots = await generateAndPersistDay(date, profile, phase.currentPhase);
     }
 
-    const [library, foundationStatuses, domainFloors, cravingEvents, relapseEvents] = await Promise.all([
-      getAssignmentLibrary(),
-      getFoundationStatuses(),
-      getDomainFloors(),
-      getCravingEvents(),
-      getRelapseEvents(),
-    ]);
+    const [library, foundationStatuses, domainFloors, cravingEvents, relapseEvents, motivationalNudgeStatus] =
+      await Promise.all([
+        getAssignmentLibrary(),
+        getFoundationStatuses(),
+        getDomainFloors(),
+        getCravingEvents(),
+        getRelapseEvents(),
+        ensureMotivationalNudgeStatus(),
+      ]);
     const silenceLevel = await computeSilenceLevel(phase, notificationSettings);
     await syncDailyNotifications({
       intensity: notificationSettings.intensity,
@@ -164,6 +181,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       library,
       silenceLevel,
       todayDate: date,
+      motivationalNudgeStatus,
     });
   }, []);
 
@@ -313,13 +331,58 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const data: ReadyAppData | null = useMemo(() => {
     if (boot.kind !== 'ready') return null;
+
+    // Motivational nudge: a craving-based spike takes priority; the fixed-
+    // timeline fallback only fires for people the spike path never covered.
+    const now = new Date();
+    const spike = detectCravingSpike(boot.cravingEvents, now);
+    const showSpike = shouldShowSpikeNudge(spike.isSpike, boot.motivationalNudgeStatus.lastSpikeNudgeShownAt, now);
+    const daysSinceReset = daysBetween(boot.phase.phaseStartDate.slice(0, 10), boot.todayDate);
+    const showFallback =
+      !showSpike &&
+      shouldShowFallbackNudge(
+        daysSinceReset,
+        boot.motivationalNudgeStatus.lastSpikeNudgeShownAt !== null,
+        boot.motivationalNudgeStatus.fallbackNudgeShown
+      );
+
+    let activeNudge: ActiveNudge | null = null;
+    if (showSpike || showFallback) {
+      // Seeded by the date rather than Math.random() so the message stays
+      // stable across re-renders of the same day, but still varies across
+      // different real occurrences.
+      const seed = Math.floor(new Date(`${boot.todayDate}T00:00:00`).getTime() / (24 * 60 * 60 * 1000));
+      activeNudge = { kind: showSpike ? 'spike' : 'fallback', message: pickNudgeMessage(seed) };
+    }
+
     return {
       ...boot,
       todaySlots: slotsCache[boot.todayDate] ?? [],
       priceDisplay,
       isPaywalled: !boot.purchaseStatus.isUnlocked && isTrialExpired(boot.phase.phaseStartDate),
+      activeNudge,
     };
   }, [boot, slotsCache, priceDisplay]);
+
+  const acknowledgeMotivationalNudge = useCallback(async () => {
+    if (!data?.activeNudge) return;
+    const nowIso = new Date().toISOString();
+    if (data.activeNudge.kind === 'spike') {
+      await markSpikeNudgeShown(nowIso);
+      setBoot((prev) =>
+        prev.kind === 'ready'
+          ? { ...prev, motivationalNudgeStatus: { ...prev.motivationalNudgeStatus, lastSpikeNudgeShownAt: nowIso } }
+          : prev
+      );
+    } else {
+      await markFallbackNudgeShown();
+      setBoot((prev) =>
+        prev.kind === 'ready'
+          ? { ...prev, motivationalNudgeStatus: { ...prev.motivationalNudgeStatus, fallbackNudgeShown: true } }
+          : prev
+      );
+    }
+  }, [data]);
 
   const value = useMemo<AppDataValue>(
     () => ({
@@ -334,6 +397,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       optOutOfNotifications,
       unlock,
       restore,
+      acknowledgeMotivationalNudge,
     }),
     [
       boot.kind,
@@ -347,6 +411,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       optOutOfNotifications,
       unlock,
       restore,
+      acknowledgeMotivationalNudge,
     ]
   );
 

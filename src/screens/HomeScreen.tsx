@@ -10,6 +10,7 @@ import NextUpCard from './NextUpCard';
 import DomainShortcuts from './DomainShortcuts';
 import SlotCard from './SlotCard';
 import SilenceModal from './SilenceModal';
+import MotivationalNudgeCard from './MotivationalNudgeCard';
 import { getNextUpSlot } from './timelineTime';
 import { getTrailingWeek } from '../domain/date';
 import { computeDayCompletion, DayCompletion } from '../foundation/dayCompletion';
@@ -25,9 +26,11 @@ export default function HomeScreen() {
     library,
     foundationStatuses,
     silenceLevel,
+    activeNudge,
     getSlotsForDate,
     checkIn,
     optOutOfNotifications,
+    acknowledgeMotivationalNudge,
   } = useReadyAppData();
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -79,6 +82,8 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+
+        <MotivationalNudgeCard nudge={activeNudge} onAcknowledge={acknowledgeMotivationalNudge} />
 
         <FoundationHeader foundationStatuses={foundationStatuses} />
 

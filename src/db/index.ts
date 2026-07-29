@@ -34,3 +34,4 @@ export * from './cravingEventRepo';
 export * from './relapseEventRepo';
 export * from './notificationSettingsRepo';
 export * from './purchaseStatusRepo';
+export * from './motivationalNudgeRepo';

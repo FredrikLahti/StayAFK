@@ -200,3 +200,13 @@ export interface PurchaseStatus {
   purchaseDate: string | null;
   platform: PurchasePlatform | null;
 }
+
+// Tracks the one-time motivational nudge shown either when a craving-based
+// spike is detected (gamingcontrol/cravingSpike.ts) or, as a backstop for
+// people who don't use the craving button much, a fixed-timeline fallback
+// (gamingcontrol/fallbackNudge.ts). Persisted so the nudge never repeats
+// once acknowledged.
+export interface MotivationalNudgeStatus {
+  lastSpikeNudgeShownAt: string | null; // ISO datetime
+  fallbackNudgeShown: boolean;
+}

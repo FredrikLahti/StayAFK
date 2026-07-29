@@ -7,6 +7,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppDataProvider } from './src/navigation/AppDataContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { colors, FONTS_TO_LOAD } from './src/theme';
+import { installE2ETestHooks } from './src/debug/e2eHooks';
+
+installE2ETestHooks();
 
 export default function App() {
   const [fontsLoaded] = useFonts(FONTS_TO_LOAD);
