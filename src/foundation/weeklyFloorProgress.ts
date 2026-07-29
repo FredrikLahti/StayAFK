@@ -1,12 +1,24 @@
 // How much of a domain's weekly floor requirement has actually been met so
 // far this week - distinct from the Foundation stage (which tracks
-// consecutive days of engagement, not minutes against a specific floor).
-import { Domain, DomainFloor, ScheduleSlot } from '../domain/types';
+// consecutive days of engagement, not progress against a specific floor).
+//
+// Time-boxed domains (Sleep/Move/Build) are measured in minutes, same as
+// before. Checklist domains (Fuel/Connect/Maintain) no longer carry a
+// duration at all (see domain/types.ts's SlotKind), so their progress is a
+// session count instead - how many times this week's checklist item has
+// been marked done/equivalent against the floor's minSessionsPerWeek.
+import { CHECKLIST_DOMAINS, Domain, DomainFloor, ScheduleSlot } from '../domain/types';
 
 export interface WeeklyFloorProgress {
-  completedMinutes: number;
-  targetMinutes: number;
+  measure: 'minutes' | 'sessions';
+  completed: number;
+  target: number;
   fraction: number; // 0-1, clamped
+}
+
+function clampedFraction(completed: number, target: number): number {
+  if (target > 0) return Math.min(1, completed / target);
+  return completed > 0 ? 1 : 0;
 }
 
 export function computeWeeklyFloorProgress(
@@ -14,12 +26,16 @@ export function computeWeeklyFloorProgress(
   weekSlots: ScheduleSlot[],
   floor: DomainFloor
 ): WeeklyFloorProgress {
-  const completedMinutes = weekSlots
-    .filter((s) => s.domain === domain && (s.status === 'done' || s.status === 'equivalent'))
-    .reduce((sum, s) => sum + s.durationMinutes, 0);
+  const domainSlots = weekSlots.filter((s) => s.domain === domain);
+  const resolvedPositively = domainSlots.filter((s) => s.status === 'done' || s.status === 'equivalent');
 
-  const targetMinutes = floor.weeklyMinimumMinutes;
-  const fraction = targetMinutes > 0 ? Math.min(1, completedMinutes / targetMinutes) : completedMinutes > 0 ? 1 : 0;
+  if (CHECKLIST_DOMAINS.includes(domain)) {
+    const completed = resolvedPositively.length;
+    const target = floor.minSessionsPerWeek;
+    return { measure: 'sessions', completed, target, fraction: clampedFraction(completed, target) };
+  }
 
-  return { completedMinutes, targetMinutes, fraction };
+  const completed = resolvedPositively.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
+  const target = floor.weeklyMinimumMinutes;
+  return { measure: 'minutes', completed, target, fraction: clampedFraction(completed, target) };
 }

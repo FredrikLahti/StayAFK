@@ -5,6 +5,7 @@ function makeSlot(overrides: Partial<ScheduleSlot> = {}): ScheduleSlot {
   return {
     id: 's1',
     date: '2026-07-28',
+    kind: 'timeboxed',
     timeWindow: 'morning',
     domain: 'Move',
     durationMinutes: 30,

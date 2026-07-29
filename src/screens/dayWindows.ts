@@ -1,6 +1,9 @@
 // Pure layout logic for the Day Detail screen: which windows actually have
-// scheduled/free time, and where to note a gap (e.g. "at work until 6pm")
-// rather than rendering empty timeline space for hours nobody is free.
+// time-boxed scheduled time (Move/Build), and where to note a gap (e.g. "at
+// work until 6pm") rather than rendering empty timeline space for hours
+// nobody is free. Sleep, the flexible block, and checklist items are all
+// rendered as their own separate sections in DayTimeline.tsx, not part of
+// this window-by-window grouping.
 import { DayPart, ScheduleSlot } from '../domain/types';
 import { WINDOW_ORDER } from './timelineTime';
 
@@ -8,15 +11,19 @@ export type DayRow =
   | { kind: 'section'; window: DayPart; slots: ScheduleSlot[] }
   | { kind: 'gap'; window: DayPart };
 
+function isTimeboxedNonSleep(slot: ScheduleSlot): slot is ScheduleSlot & { timeWindow: DayPart } {
+  return slot.kind === 'timeboxed' && slot.domain !== 'Sleep';
+}
+
 // Only windows strictly between the first and last occupied window are
 // worth calling out as a gap - a window before the first or after the last
 // bit of free time isn't a "gap in the middle of the day", it's just
 // outside the free-time range entirely, so those are omitted rather than
 // noted.
 export function buildDayRows(slots: ScheduleSlot[]): DayRow[] {
-  const domainSlots = slots.filter((s) => s.domain !== 'Sleep');
+  const timeboxedSlots = slots.filter(isTimeboxedNonSleep);
   const slotsByWindow = new Map<DayPart, ScheduleSlot[]>();
-  for (const slot of domainSlots) {
+  for (const slot of timeboxedSlots) {
     const list = slotsByWindow.get(slot.timeWindow) ?? [];
     list.push(slot);
     slotsByWindow.set(slot.timeWindow, list);

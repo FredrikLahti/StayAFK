@@ -4,6 +4,17 @@ export type Domain = 'Sleep' | 'Move' | 'Fuel' | 'Connect' | 'Build' | 'Live' | 
 
 export const ALL_DOMAINS: Domain[] = ['Sleep', 'Move', 'Fuel', 'Connect', 'Build', 'Live', 'Maintain'];
 
+// Per the "Day structure: time-boxed vs. checklist domains" split: Sleep,
+// Move, and Build get real minute-duration windows placed on the timeline.
+// Fuel, Connect, and Maintain no longer get a duration or time window at
+// all - they're a day-level checklist, still gated by their existing
+// floor/frequency rules for whether they're due (see engine/checklist.ts),
+// just without a fake duration attached. Live isn't in either list - it's
+// no longer an assignable domain, replaced by the single 'flexible' slot
+// that stands in for whatever free time is left over (see SlotKind).
+export const TIMEBOXED_DOMAINS: Domain[] = ['Sleep', 'Move', 'Build'];
+export const CHECKLIST_DOMAINS: Domain[] = ['Fuel', 'Connect', 'Maintain'];
+
 export type DayPart = 'morning' | 'afternoon' | 'evening' | 'night';
 
 export const DAY_PARTS: DayPart[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -74,12 +85,24 @@ export interface FoundationStatus {
 
 export type SlotStatus = 'pending' | 'done' | 'equivalent' | 'missed' | 'not_possible';
 
+// 'timeboxed': a real minute-duration window placed in a specific DayPart
+// (Sleep/Move/Build). 'checklist': a day-level item with no duration or
+// window (Fuel/Connect/Maintain). 'flexible': the single open-time region
+// (domain 'Live') standing in for whatever's left after the timeboxed
+// blocks are placed - replaces the old per-window Live filler slot.
+export type SlotKind = 'timeboxed' | 'checklist' | 'flexible';
+
 export interface ScheduleSlot {
   id: string;
   date: string;
-  timeWindow: DayPart;
+  kind: SlotKind;
+  // Only set for 'timeboxed' slots - checklist items and the flexible
+  // block aren't tied to one specific time of day.
+  timeWindow: DayPart | null;
   domain: Domain;
-  durationMinutes: number;
+  // Only set for 'timeboxed' and 'flexible' slots - checklist items have no
+  // duration attached at all.
+  durationMinutes: number | null;
   assignedActivityId: string | null;
   // The AssignmentLibrary entry actually logged when status is 'equivalent'
   // (what the person substituted in, as opposed to assignedActivityId,

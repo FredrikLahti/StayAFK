@@ -2,13 +2,16 @@
 // DomainFloor requirements and weighting toward maximal fill during the
 // Reset phase (per ARCHITECTURE.md's Layer 2 description).
 //
-// Sleep and Live are handled outside this layer: Sleep is a fixed nightly
-// commitment rather than something that competes for discretionary free
-// time (see layer3.ts), and Live is the Layer 3 fallback for whatever this
-// layer doesn't spend, not a domain that actively competes for a share here.
+// Only Move and Build compete for discretionary free time here - per the
+// "Day structure: time-boxed vs. checklist domains" split, Sleep is a fixed
+// nightly commitment (handled in layer3.ts), Fuel/Connect/Maintain are a
+// day-level checklist with no duration to allocate at all (see
+// checklist.ts), and Live isn't a domain competing for a share - it's the
+// single 'flexible' slot layer3 builds from whatever this layer doesn't
+// spend.
 import { Domain, DomainFloor, PhaseName } from '../domain/types';
 
-export const ALLOCATABLE_DOMAINS: Domain[] = ['Move', 'Fuel', 'Connect', 'Build', 'Maintain'];
+export const ALLOCATABLE_DOMAINS: Domain[] = ['Move', 'Build'];
 
 export interface DomainAllocation {
   domain: Domain;
@@ -61,8 +64,8 @@ export function allocateDomainMinutes(
   // Floors are all satisfiable; distribute the remaining time weighted
   // toward maximal fill (still proportional to floor weight, so domains
   // with a bigger weekly floor get a bigger share of the extra time too).
-  // Domains with a 0 floor (e.g. Maintain) still get weight 1 so they're
-  // not entirely starved of "bonus" fill time.
+  // A domain with a 0 floor would still get weight 1 here rather than being
+  // starved entirely, though both allocatable domains currently have one.
   const remaining = totalFreeMinutes - totalDailyMinimum;
   const fillWeight = FILL_WEIGHT_BY_PHASE[phase];
   const distributable = remaining * fillWeight;

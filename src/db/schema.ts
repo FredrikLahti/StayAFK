@@ -50,9 +50,10 @@ CREATE TABLE IF NOT EXISTS foundation_status (
 CREATE TABLE IF NOT EXISTS schedule_slot (
   id TEXT PRIMARY KEY NOT NULL,
   date TEXT NOT NULL,
-  time_window TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'timeboxed',
+  time_window TEXT,
   domain TEXT NOT NULL,
-  duration_minutes INTEGER NOT NULL,
+  duration_minutes INTEGER,
   assigned_activity_id TEXT,
   equivalent_activity_id TEXT,
   status TEXT NOT NULL,

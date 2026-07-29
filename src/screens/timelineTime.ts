@@ -25,11 +25,12 @@ export const DAY_SPAN_START_HOUR = WINDOW_BOUNDS.morning.startHour;
 export const DAY_SPAN_END_HOUR = WINDOW_BOUNDS.night.endHour;
 export const DAY_SPAN_HOURS = DAY_SPAN_END_HOUR - DAY_SPAN_START_HOUR;
 
-// The single next pending, actionable slot in window order. Sleep is
-// excluded - it's protected/passive time, not a to-do to surface as "next
-// up" the way a workout or meal slot is.
+// The single next pending, actionable slot in window order. Only
+// considers time-boxed slots (Move/Build) - Sleep is protected/passive time,
+// and checklist items / the flexible block have no time of day to be
+// "next" at, so they don't fit the "coming up" framing this card gives.
 export function getNextUpSlot(slots: ScheduleSlot[]): ScheduleSlot | null {
-  const pending = slots.filter((s) => s.status === 'pending' && s.domain !== 'Sleep');
+  const pending = slots.filter((s) => s.status === 'pending' && s.kind === 'timeboxed' && s.domain !== 'Sleep');
   for (const window of WINDOW_ORDER) {
     const match = pending.find((s) => s.timeWindow === window);
     if (match) return match;

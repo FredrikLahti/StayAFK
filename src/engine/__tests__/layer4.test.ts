@@ -23,6 +23,7 @@ function makeSlot(overrides: Partial<ScheduleSlot> = {}): ScheduleSlot {
   return {
     id: 's1',
     date: '2026-07-28',
+    kind: 'timeboxed',
     timeWindow: 'evening',
     domain: 'Move',
     durationMinutes: 45,
@@ -70,6 +71,15 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
     const slots = [makeSlot({ domain: 'Move' })];
     const [result] = assignPlaceholderActivities(slots, [], makeProfile());
     expect(result.assignedActivityId).toBeNull();
+  });
+
+  it('assigns a checklist slot (no duration) without a closest-duration comparison', () => {
+    const slots = [
+      makeSlot({ kind: 'checklist', timeWindow: null, domain: 'Fuel', durationMinutes: null }),
+    ];
+    const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, makeProfile());
+
+    expect(result.assignedActivityId).not.toBeNull();
   });
 
   it('falls back to an infeasible candidate rather than leaving a slot unassigned', () => {

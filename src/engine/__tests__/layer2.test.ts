@@ -2,6 +2,10 @@ import { allocateDomainMinutes, ALLOCATABLE_DOMAINS } from '../layer2';
 import { DEFAULT_DOMAIN_FLOORS } from '../../domain/defaults';
 
 describe('allocateDomainMinutes (Layer 2)', () => {
+  it('only allocates the time-boxed domains (Move/Build) - Fuel/Connect/Maintain are checklist-only now', () => {
+    expect([...ALLOCATABLE_DOMAINS].sort()).toEqual(['Build', 'Move']);
+  });
+
   it('never allocates more than the total free minutes available', () => {
     const totalFreeMinutes = 60;
     const allocations = allocateDomainMinutes(totalFreeMinutes, DEFAULT_DOMAIN_FLOORS, 'reset');
@@ -12,13 +16,13 @@ describe('allocateDomainMinutes (Layer 2)', () => {
   });
 
   it('shares scarce time proportionally to floor weight when floors cannot all be met', () => {
-    // Move's daily floor (~64 min) is bigger than Connect's (~8.6 min), so
-    // with very little free time Move should still get more of it than Connect.
+    // Move's daily floor (~55.7 min) is bigger than Build's (~21.4 min), so
+    // with very little free time Move should still get more of it than Build.
     const allocations = allocateDomainMinutes(10, DEFAULT_DOMAIN_FLOORS, 'reset');
     const move = allocations.find((a) => a.domain === 'Move')!;
-    const connect = allocations.find((a) => a.domain === 'Connect')!;
+    const build = allocations.find((a) => a.domain === 'Build')!;
 
-    expect(move.minutes).toBeGreaterThan(connect.minutes);
+    expect(move.minutes).toBeGreaterThan(build.minutes);
   });
 
   it('fills more of the remaining time in reset phase than in autonomy phase', () => {
@@ -38,11 +42,11 @@ describe('allocateDomainMinutes (Layer 2)', () => {
     expect(allocations.every((a) => a.minutes === 0)).toBe(true);
   });
 
-  it('still allocates zero-floor domains some fill time when free time is abundant', () => {
-    // Maintain has a 0 weekly floor in the defaults, but should still get a
-    // share of "maximal fill" time in reset phase rather than being starved.
+  it('still gives Build a share of "maximal fill" time when free time is abundant, not just its floor', () => {
     const allocations = allocateDomainMinutes(1000, DEFAULT_DOMAIN_FLOORS, 'reset');
-    const maintain = allocations.find((a) => a.domain === 'Maintain')!;
-    expect(maintain.minutes).toBeGreaterThan(0);
+    const build = allocations.find((a) => a.domain === 'Build')!;
+    const buildDailyFloor = DEFAULT_DOMAIN_FLOORS.find((f) => f.domain === 'Build')!.weeklyMinimumMinutes / 7;
+
+    expect(build.minutes).toBeGreaterThan(buildDailyFloor);
   });
 });

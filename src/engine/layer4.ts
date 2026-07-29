@@ -23,9 +23,14 @@ function pickBestMatch(
   // unassigned, even if none is a perfect fit for this profile yet.
   const pool = feasible.length > 0 ? feasible : candidates;
 
+  // Checklist slots have no duration to match against (see domain/types.ts'
+  // SlotKind) - there's nothing to compare, so just take the first feasible
+  // candidate rather than a closest-duration match.
+  if (slot.durationMinutes === null) return pool[0];
+
+  const targetMinutes = slot.durationMinutes;
   return pool.reduce((best, entry) =>
-    Math.abs(entry.tags.durationMinutes - slot.durationMinutes) <
-    Math.abs(best.tags.durationMinutes - slot.durationMinutes)
+    Math.abs(entry.tags.durationMinutes - targetMinutes) < Math.abs(best.tags.durationMinutes - targetMinutes)
       ? entry
       : best
   );

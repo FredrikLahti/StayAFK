@@ -73,7 +73,7 @@ export default function SlotCard({ slot, library, onCheckIn }: Props) {
     <View style={styles.slotCard} testID={`slot-${slot.id}`}>
       <View style={styles.slotHeader}>
         <Text style={styles.slotDomain}>{slot.domain}</Text>
-        <Text style={styles.slotDuration}>{slot.durationMinutes} min</Text>
+        {slot.durationMinutes !== null && <Text style={styles.slotDuration}>{slot.durationMinutes} min</Text>}
       </View>
       <Text style={styles.slotActivity}>{assigned ? assigned.description : 'No assignment available yet'}</Text>
 

@@ -4,7 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useReadyAppData } from '../navigation/AppDataContext';
-import { ScheduleSlot } from '../domain/types';
+import { CHECKLIST_DOMAINS, ScheduleSlot } from '../domain/types';
 import { getTrailingWeek } from '../domain/date';
 import { DOMAIN_LEARN_MORE } from '../domain/learnMore';
 import { domainProgress } from '../foundation/progress';
@@ -45,6 +45,7 @@ export default function DomainDetailScreen() {
   const status = foundationStatuses.find((s) => s.domain === domain);
   const floor = domainFloors.find((f) => f.domain === domain);
   const accent = DOMAIN_COLOR[domain];
+  const isChecklistDomain = CHECKLIST_DOMAINS.includes(domain);
   const stageProgress = status ? domainProgress(status) : 0;
   const weeklyProgress = weekSlots && floor ? computeWeeklyFloorProgress(domain, weekSlots, floor) : null;
   const learnMore = DOMAIN_LEARN_MORE[domain];
@@ -77,7 +78,9 @@ export default function DomainDetailScreen() {
           {floor ? (
             <>
               <Text style={styles.floorTarget}>
-                {formatHours(floor.weeklyMinimumMinutes)}/week · {floor.minSessionsPerWeek} sessions/week
+                {isChecklistDomain
+                  ? `${floor.minSessionsPerWeek} time${floor.minSessionsPerWeek === 1 ? '' : 's'}/week`
+                  : `${formatHours(floor.weeklyMinimumMinutes)}/week · ${floor.minSessionsPerWeek} sessions/week`}
               </Text>
               <Text style={styles.bodyMuted}>{floor.notes}</Text>
 
@@ -88,7 +91,9 @@ export default function DomainDetailScreen() {
                       <View style={[styles.weeklyBarFill, { width: `${weeklyProgress.fraction * 100}%`, backgroundColor: accent }]} />
                     </View>
                     <Text style={styles.weeklyProgressText}>
-                      {formatHours(weeklyProgress.completedMinutes)} of {formatHours(weeklyProgress.targetMinutes)} this week
+                      {weeklyProgress.measure === 'minutes'
+                        ? `${formatHours(weeklyProgress.completed)} of ${formatHours(weeklyProgress.target)} this week`
+                        : `${weeklyProgress.completed} of ${weeklyProgress.target} this week`}
                     </Text>
                   </>
                 ) : (

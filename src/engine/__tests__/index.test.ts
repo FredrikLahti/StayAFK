@@ -1,6 +1,6 @@
 import { generateDailySchedule } from '../index';
 import { DEFAULT_DOMAIN_FLOORS, PLACEHOLDER_ASSIGNMENT_LIBRARY } from '../../domain/defaults';
-import { UserProfile } from '../../domain/types';
+import { Domain, UserProfile } from '../../domain/types';
 
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -28,20 +28,32 @@ describe('generateDailySchedule (end-to-end)', () => {
       floors: DEFAULT_DOMAIN_FLOORS,
       library: PLACEHOLDER_ASSIGNMENT_LIBRARY,
       phase: 'reset',
+      dueChecklistDomains: ['Fuel', 'Connect', 'Maintain'],
     });
 
     expect(slots.length).toBeGreaterThan(0);
     expect(slots.some((s) => s.domain === 'Sleep')).toBe(true);
-    // Every non-Sleep slot should sit inside the profile's typical windows.
     for (const slot of slots) {
-      if (slot.domain !== 'Sleep') {
+      if (slot.kind === 'timeboxed' && slot.domain !== 'Sleep') {
+        // Every time-boxed non-Sleep slot should sit inside the profile's
+        // typical windows.
         expect(['evening', 'night']).toContain(slot.timeWindow);
+      }
+      if (slot.kind === 'checklist' || slot.kind === 'flexible') {
+        // Checklist items and the flexible block have no time of day.
+        expect(slot.timeWindow).toBeNull();
       }
       expect(slot.status).toBe('pending');
       expect(slot.phaseAtCreation).toBe('reset');
     }
     // Placeholder library covers every domain used, so nothing should be unassigned.
     expect(slots.every((s) => s.assignedActivityId !== null)).toBe(true);
+    // The three checklist domains were passed in as due, so each gets one item.
+    expect(slots.filter((s) => s.kind === 'checklist').map((s) => s.domain).sort()).toEqual([
+      'Connect',
+      'Fuel',
+      'Maintain',
+    ]);
   });
 
   it('is deterministic for the same inputs', () => {
@@ -52,6 +64,7 @@ describe('generateDailySchedule (end-to-end)', () => {
       floors: DEFAULT_DOMAIN_FLOORS,
       library: PLACEHOLDER_ASSIGNMENT_LIBRARY,
       phase: 'reset' as const,
+      dueChecklistDomains: ['Fuel', 'Connect', 'Maintain'] as Domain[],
     };
 
     expect(generateDailySchedule(params)).toEqual(generateDailySchedule(params));

@@ -25,7 +25,10 @@ export default function NextUpCard({ slot, library, onPress }: Props) {
   const assigned = slot.assignedActivityId
     ? library.find((entry) => entry.id === slot.assignedActivityId)
     : undefined;
-  const remaining = describeTimeRemaining(slot.timeWindow, now);
+  // getNextUpSlot only ever returns a time-boxed slot, which always has a
+  // window - the null case in ScheduleSlot's type is for checklist/flexible
+  // slots, which never reach this component.
+  const remaining = slot.timeWindow ? describeTimeRemaining(slot.timeWindow, now) : null;
   const domainColor = DOMAIN_COLOR[slot.domain];
 
   return (
@@ -46,7 +49,7 @@ export default function NextUpCard({ slot, library, onPress }: Props) {
           </Text>
           <View style={styles.footerRow}>
             <Text style={styles.duration}>{slot.durationMinutes} min</Text>
-            <Text style={styles.remaining}>{remaining.label}</Text>
+            {remaining && <Text style={styles.remaining}>{remaining.label}</Text>}
           </View>
         </View>
       </MetalGradient>

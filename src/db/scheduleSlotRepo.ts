@@ -1,12 +1,13 @@
 import { getDb } from './client';
-import { Domain, DayPart, PhaseName, ScheduleSlot, SlotStatus } from '../domain/types';
+import { Domain, DayPart, PhaseName, ScheduleSlot, SlotKind, SlotStatus } from '../domain/types';
 
 interface ScheduleSlotRow {
   id: string;
   date: string;
-  time_window: string;
+  kind: string;
+  time_window: string | null;
   domain: string;
-  duration_minutes: number;
+  duration_minutes: number | null;
   assigned_activity_id: string | null;
   equivalent_activity_id: string | null;
   status: string;
@@ -17,7 +18,8 @@ function rowToSlot(row: ScheduleSlotRow): ScheduleSlot {
   return {
     id: row.id,
     date: row.date,
-    timeWindow: row.time_window as DayPart,
+    kind: row.kind as SlotKind,
+    timeWindow: row.time_window as DayPart | null,
     domain: row.domain as Domain,
     durationMinutes: row.duration_minutes,
     assignedActivityId: row.assigned_activity_id,
@@ -42,11 +44,12 @@ export async function replaceScheduleSlotsForDate(date: string, slots: ScheduleS
     await db.runAsync('DELETE FROM schedule_slot WHERE date = ?', [date]);
     for (const slot of slots) {
       await db.runAsync(
-        `INSERT INTO schedule_slot (id, date, time_window, domain, duration_minutes, assigned_activity_id, equivalent_activity_id, status, phase_at_creation)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO schedule_slot (id, date, kind, time_window, domain, duration_minutes, assigned_activity_id, equivalent_activity_id, status, phase_at_creation)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           slot.id,
           slot.date,
+          slot.kind,
           slot.timeWindow,
           slot.domain,
           slot.durationMinutes,

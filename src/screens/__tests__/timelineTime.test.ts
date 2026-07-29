@@ -5,6 +5,7 @@ function makeSlot(overrides: Partial<ScheduleSlot> = {}): ScheduleSlot {
   return {
     id: 's1',
     date: '2026-07-28',
+    kind: 'timeboxed',
     timeWindow: 'morning',
     domain: 'Move',
     durationMinutes: 30,
@@ -40,6 +41,19 @@ describe('getNextUpSlot', () => {
       makeSlot({ id: 'evening-move', timeWindow: 'evening', domain: 'Move' }),
     ];
     expect(getNextUpSlot(slots)?.id).toBe('evening-move');
+  });
+
+  it('excludes checklist and flexible slots - only time-boxed slots can be "next up"', () => {
+    const checklist = makeSlot({
+      id: 'checklist',
+      kind: 'checklist',
+      timeWindow: null,
+      domain: 'Fuel',
+      durationMinutes: null,
+    });
+    const flexible = makeSlot({ id: 'flexible', kind: 'flexible', timeWindow: null, domain: 'Live', durationMinutes: 60 });
+    const evening = makeSlot({ id: 'evening-move', timeWindow: 'evening', domain: 'Move' });
+    expect(getNextUpSlot([checklist, flexible, evening])?.id).toBe('evening-move');
   });
 
   it('returns null when nothing is pending', () => {
