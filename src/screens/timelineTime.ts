@@ -7,6 +7,13 @@ import { DayPart, ScheduleSlot } from '../domain/types';
 
 export const WINDOW_ORDER: DayPart[] = ['morning', 'afternoon', 'evening', 'night'];
 
+export const WINDOW_LABEL: Record<DayPart, string> = {
+  morning: 'Morning',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+  night: 'Night',
+};
+
 export const WINDOW_BOUNDS: Record<DayPart, { startHour: number; endHour: number }> = {
   morning: { startHour: 6, endHour: 12 },
   afternoon: { startHour: 12, endHour: 17 },
