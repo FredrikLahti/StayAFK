@@ -142,3 +142,15 @@ Loosely grounded in habit-formation research (Lally et al., 2010) — median ~66
     - After work/school / Late at night / Weekends / Whenever free time opens up
 
 This is the last open item — with this in place, the architecture doc is content-complete and ready to hand to Claude Code for Stage 1.
+
+## Day structure: time-boxed vs. checklist domains (revised)
+
+Not every domain should occupy a precise minute-slot on the timeline — assigning fake-precise durations to things like a quick errand or a phone call produced absurd results (e.g. "18min Connect"). Split:
+
+- Time-boxed (real timeline windows, real durations): Sleep, Move, Build.
+- Checklist-based (no assigned duration): Fuel, Connect, Maintain.
+- Live is the open "flexible time" block itself, not its own line item.
+
+## Navigation structure (as of claude/navigation-restructure)
+
+Home (Foundation ring w/ stage name + weekly calendar strip + Next Up + domain shortcuts) -> Day Detail (per-day timeline, time-boxed blocks + flexible block + checklist) / Domain Detail (per-domain floor progress + Learn More placeholder) -> Gaming Control, Settings reachable via header links.
