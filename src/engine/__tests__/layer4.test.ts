@@ -48,7 +48,10 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
     const profile = makeProfile({ gymAccess: 'none' });
     const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, profile);
 
-    expect(result.assignedActivityId).not.toBe('move-1'); // move-1 requires gym
+    // These four are the only gym-tagged Move entries.
+    expect(['move_upper', 'move_lower_a', 'move_lower_b', 'move_disco_arms']).not.toContain(
+      result.assignedActivityId
+    );
   });
 
   it('excludes high-intensity activities when the profile has physical limitations', () => {
@@ -56,7 +59,7 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
     const profile = makeProfile({ physicalLimitations: true });
     const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, profile);
 
-    expect(result.assignedActivityId).not.toBe('move-1'); // move-1 is high intensity
+    expect(result.assignedActivityId).not.toBe('move_hill_sprints'); // the only high-intensity Move entry
   });
 
   it('picks the candidate whose duration is closest to the slot length', () => {
@@ -64,7 +67,40 @@ describe('assignPlaceholderActivities (Layer 4)', () => {
     const profile = makeProfile();
     const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, profile);
 
-    expect(result.assignedActivityId).toBe('move-4'); // 20 min, closest match
+    expect(result.assignedActivityId).toBe('move_mobility_light'); // 20 min, exact match
+  });
+
+  it('alternates between duration-tied candidates instead of always picking the same one', () => {
+    // move_upper/move_lower_a/move_lower_b all share identical tags (gym,
+    // moderate, 60min), so a 60-min Move slot ties between all three.
+    const slots = [
+      makeSlot({ id: 's1', domain: 'Move', durationMinutes: 60 }),
+      makeSlot({ id: 's2', domain: 'Move', durationMinutes: 60 }),
+      makeSlot({ id: 's3', domain: 'Move', durationMinutes: 60 }),
+    ];
+    const result = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, makeProfile());
+
+    expect(new Set(result.map((s) => s.assignedActivityId)).size).toBe(3);
+  });
+
+  it('deprioritizes candidates already assigned earlier this week', () => {
+    const slots = [makeSlot({ domain: 'Move', durationMinutes: 60 })];
+    const [result] = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, makeProfile(), [
+      'move_upper',
+      'move_lower_a',
+    ]);
+
+    expect(result.assignedActivityId).toBe('move_lower_b');
+  });
+
+  it('alternates move_lower_a/move_lower_b across the week once move_upper is already used', () => {
+    const slots = [
+      makeSlot({ id: 's1', domain: 'Move', durationMinutes: 60 }),
+      makeSlot({ id: 's2', domain: 'Move', durationMinutes: 60 }),
+    ];
+    const result = assignPlaceholderActivities(slots, PLACEHOLDER_ASSIGNMENT_LIBRARY, makeProfile(), ['move_upper']);
+
+    expect(result.map((s) => s.assignedActivityId)).toEqual(['move_lower_a', 'move_lower_b']);
   });
 
   it('leaves assignedActivityId null when no library entry exists for the domain', () => {

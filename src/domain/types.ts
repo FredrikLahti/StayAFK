@@ -112,7 +112,7 @@ export interface ScheduleSlot {
   phaseAtCreation: PhaseName;
 }
 
-export type EquipmentNeeded = 'none' | 'gym' | 'kitchen' | 'outdoor';
+export type EquipmentNeeded = 'none' | 'gym' | 'kitchen' | 'outdoor' | 'bike' | 'pool';
 export type ActivityLocation = 'home' | 'gym' | 'outdoor' | 'anywhere';
 export type ActivityIntensity = 'low' | 'moderate' | 'high';
 
@@ -135,6 +135,14 @@ export interface AssignmentLibraryEntry {
   tags: AssignmentTags;
   intensityTier: IntensityTier;
   description: string;
+  // Shown alongside the "Is it, though?" honesty check when a time-boxed
+  // activity is logged as Equivalent - what the originally-assigned
+  // activity should generally feel like, so the person can self-judge
+  // their substitution against something concrete rather than the app
+  // trying to categorize the substitution itself.
+  expectedFeeling?: string;
+  // Optional equipment-alternative or other practical substitution note.
+  substitutionNote?: string;
 }
 
 // Full state list per ARCHITECTURE.md. Stage 3 (explicit-trigger scope) only

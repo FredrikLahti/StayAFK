@@ -127,6 +127,11 @@ export default function SlotCard({ slot, library, onCheckIn }: Props) {
             {modal.kind === 'honestyCheck' && (
               <>
                 <Text style={styles.dialogTitle}>Is it, though?</Text>
+                {assigned?.expectedFeeling && (
+                  <Text style={styles.expectedFeelingText} testID="expected-feeling-text">
+                    What {assigned.description.toLowerCase()} should feel like: {assigned.expectedFeeling}
+                  </Text>
+                )}
                 <Pressable style={styles.dialogOption} onPress={() => handleHonestlyYes(modal.picked)}>
                   <Text style={styles.dialogOptionText}>Honestly, yes</Text>
                 </Pressable>
@@ -193,6 +198,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   dialogTitle: { fontFamily: fontFamily.headerBold, color: colors.textPrimary, fontSize: 18, marginBottom: spacing.lg },
+  expectedFeelingText: {
+    ...typography.bodyMuted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.lg,
+  },
   dialogOption: {
     backgroundColor: colors.background,
     borderRadius: radius.md - 2,

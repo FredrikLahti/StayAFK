@@ -26,11 +26,17 @@ export interface GenerateDailyScheduleParams {
   // stays pure/stateless. Defaults to none due, so callers that don't pass
   // it just get a day with no checklist items rather than a crash.
   dueChecklistDomains?: Domain[];
+  // AssignmentLibraryEntry ids already assigned on prior days this week
+  // (same caller-computed, DB-backed input as dueChecklistDomains) - lets
+  // Layer 4 break duration-match ties (e.g. move_lower_a vs move_lower_b)
+  // by preferring whichever hasn't been used yet, so the week alternates
+  // instead of always picking the same tied candidate.
+  recentlyAssignedIds?: string[];
 }
 
 // Runs all four engine layers in sequence for a single day.
 export function generateDailySchedule(params: GenerateDailyScheduleParams): ScheduleSlot[] {
-  const { date, profile, check, floors, library, phase, dueChecklistDomains = [] } = params;
+  const { date, profile, check, floors, library, phase, dueChecklistDomains = [], recentlyAssignedIds = [] } = params;
 
   const windows = computeFreeTimeWindows(profile, check, new Date(`${date}T00:00:00`));
   const totalFreeMinutes = windows.reduce((sum, w) => sum + w.minutes, 0);
@@ -38,7 +44,7 @@ export function generateDailySchedule(params: GenerateDailyScheduleParams): Sche
   const sleepFloor = floors.find((f) => f.domain === 'Sleep');
   const rawSlots = buildScheduleSlots(date, windows, allocations, phase, sleepFloor, dueChecklistDomains);
 
-  return assignPlaceholderActivities(rawSlots, library, profile);
+  return assignPlaceholderActivities(rawSlots, library, profile, recentlyAssignedIds);
 }
 
 export {

@@ -14,7 +14,8 @@ function isFeasible(entry: AssignmentLibraryEntry, profile: UserProfile): boolea
 function pickBestMatch(
   candidates: AssignmentLibraryEntry[],
   slot: ScheduleSlot,
-  profile: UserProfile
+  profile: UserProfile,
+  recentlyAssignedIds: Set<string>
 ): AssignmentLibraryEntry | undefined {
   if (candidates.length === 0) return undefined;
 
@@ -29,21 +30,31 @@ function pickBestMatch(
   if (slot.durationMinutes === null) return pool[0];
 
   const targetMinutes = slot.durationMinutes;
-  return pool.reduce((best, entry) =>
-    Math.abs(entry.tags.durationMinutes - targetMinutes) < Math.abs(best.tags.durationMinutes - targetMinutes)
-      ? entry
-      : best
+  const bestDistance = pool.reduce(
+    (min, entry) => Math.min(min, Math.abs(entry.tags.durationMinutes - targetMinutes)),
+    Infinity
   );
+  const tiedBest = pool.filter((entry) => Math.abs(entry.tags.durationMinutes - targetMinutes) === bestDistance);
+
+  // Multiple equally-good matches (e.g. move_lower_a/move_lower_b share
+  // identical tags) - prefer one not already assigned earlier this week so
+  // the engine alternates between them instead of always picking the same
+  // one. Falls back to the first tied candidate, same deterministic
+  // behavior as before, once everything tied has already been used.
+  return tiedBest.find((entry) => !recentlyAssignedIds.has(entry.id)) ?? tiedBest[0];
 }
 
 export function assignPlaceholderActivities(
   slots: ScheduleSlot[],
   library: AssignmentLibraryEntry[],
-  profile: UserProfile
+  profile: UserProfile,
+  recentlyAssignedIds: string[] = []
 ): ScheduleSlot[] {
+  const used = new Set(recentlyAssignedIds);
   return slots.map((slot) => {
     const candidates = library.filter((entry) => entry.domain === slot.domain);
-    const match = pickBestMatch(candidates, slot, profile);
+    const match = pickBestMatch(candidates, slot, profile, used);
+    if (match) used.add(match.id);
     return { ...slot, assignedActivityId: match?.id ?? null };
   });
 }

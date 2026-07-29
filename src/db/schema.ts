@@ -67,7 +67,9 @@ CREATE TABLE IF NOT EXISTS assignment_library (
   domain TEXT NOT NULL,
   tags TEXT NOT NULL,
   intensity_tier TEXT NOT NULL,
-  description TEXT NOT NULL
+  description TEXT NOT NULL,
+  expected_feeling TEXT,
+  substitution_note TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gaming_control_status (

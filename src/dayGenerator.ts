@@ -13,12 +13,8 @@ import {
 // Which checklist domains (Fuel/Connect/Maintain) are still due for `date`,
 // based on how many times each has already been completed (done/equivalent)
 // on the prior days of the trailing week - the same "this week" window
-// DomainDetailScreen uses for weekly floor progress. `date` itself is
-// excluded since it hasn't happened yet at generation time.
-async function computeDueChecklistDomains(date: string, floors: DomainFloor[]): Promise<Domain[]> {
-  const priorDates = getTrailingWeek(date).filter((d) => d !== date);
-  const priorSlots = (await Promise.all(priorDates.map((d) => getScheduleSlotsForDate(d)))).flat();
-
+// DomainDetailScreen uses for weekly floor progress.
+function computeDueChecklistDomains(priorSlots: ScheduleSlot[], floors: DomainFloor[]): Domain[] {
   const due: Domain[] = [];
   for (const domain of CHECKLIST_DOMAINS) {
     const floor = floors.find((f) => f.domain === domain);
@@ -34,6 +30,15 @@ async function computeDueChecklistDomains(date: string, floors: DomainFloor[]): 
     }
   }
   return due;
+}
+
+// AssignmentLibraryEntry ids already assigned on prior days this week, so
+// Layer 4 can alternate between duration-tied candidates (e.g.
+// move_lower_a/move_lower_b) instead of always picking the same one.
+function computeRecentlyAssignedIds(priorSlots: ScheduleSlot[]): string[] {
+  return priorSlots
+    .map((s) => s.assignedActivityId)
+    .filter((id): id is string => id !== null);
 }
 
 // Generates (or regenerates) a day's ScheduleSlots for the given profile and
@@ -52,7 +57,10 @@ export async function generateAndPersistDay(
   }
 
   const [floors, library] = await Promise.all([getDomainFloors(), getAssignmentLibrary()]);
-  const dueChecklistDomains = await computeDueChecklistDomains(date, floors);
+  const priorDates = getTrailingWeek(date).filter((d) => d !== date);
+  const priorSlots = (await Promise.all(priorDates.map((d) => getScheduleSlotsForDate(d)))).flat();
+  const dueChecklistDomains = computeDueChecklistDomains(priorSlots, floors);
+  const recentlyAssignedIds = computeRecentlyAssignedIds(priorSlots);
 
   const slots = generateDailySchedule({
     date,
@@ -62,6 +70,7 @@ export async function generateAndPersistDay(
     library,
     phase,
     dueChecklistDomains,
+    recentlyAssignedIds,
   });
   await replaceScheduleSlotsForDate(date, slots);
   return slots;
